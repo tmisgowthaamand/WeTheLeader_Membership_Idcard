@@ -298,6 +298,13 @@ def generate_ptc_code() -> str:
     return 'WTL-' + uuid.uuid4().hex[:7].upper()
 
 
+def generate_download_name(ptc_code: str = '') -> str:
+    safe_code = re.sub(r'[^A-Za-z0-9-]', '', (ptc_code or '').strip().upper())
+    if safe_code:
+        return safe_code if safe_code.startswith('WTL-') else f'WTL-{safe_code}'
+    return generate_ptc_code()
+
+
 def get_voter_gen_count(epic_no: str) -> int:
     db  = _get_db()
     doc = db.generation_stats.find_one({"epic_no": epic_no}, {"count": 1})
@@ -497,7 +504,8 @@ def demo_generate():
     epic_no  = (request.form.get('epic_no')  or 'KFD3622586').strip().upper()
     assembly = (request.form.get('assembly') or 'EGMORE').strip().upper()
     district = (request.form.get('district') or 'CHENNAI').strip().upper()
-    ptc_code = generate_ptc_code()
+    ptc_code = (request.form.get('ptc_code') or '').strip().upper()
+    ptc_code = generate_download_name(ptc_code) if ptc_code else generate_ptc_code()
 
     voter = {
         'name':          name,
@@ -1016,6 +1024,8 @@ def chat_generate_card():
             'success':      True,
             'card_url':     card_url,
             'combined_url': combined_url,
+            'download_name': generate_download_name(ptc_code),
+            'ptc_code':      ptc_code,
             'photo_url':    photo_url,
             'epic_no':      epic_no,
             'voter_name':   voter.get('name', ''),
@@ -1072,10 +1082,14 @@ def user_card_page(epic_no):
     # Get combined URL from DB
     db  = _get_db()
     gen = db.generation_stats.find_one({"epic_no": epic_no}, {"combined_url": 1}) or {}
-    combined_url = gen.get('combined_url') or card_url
+    gen_doc = db.generated_voters.find_one({"EPIC_NO": epic_no},
+                                           {"ptc_code": 1, "combined_url": 1},
+                                           sort=[("generated_at", DESCENDING)]) or {}
+    combined_url = gen.get('combined_url') or gen_doc.get('combined_url') or card_url
     return render_template('user/card.html', epic_no=epic_no, voter=voter,
                            gen_count=gen_count, card_url=card_url,
-                           combined_url=combined_url)
+                           combined_url=combined_url,
+                           download_name=generate_download_name(gen_doc.get('ptc_code', '')))
 
 
 @app.route('/mycard/<epic_no>')
@@ -1085,7 +1099,8 @@ def user_serve_card(epic_no):
         return jsonify({'error': 'Unauthorized'}), 401
     epic_no = epic_no.strip().upper()
     db  = _get_db()
-    doc = db.generated_voters.find_one({"EPIC_NO": epic_no, "MOBILE_NO": mobile}, {"_id": 1})
+    doc = db.generated_voters.find_one({"EPIC_NO": epic_no, "MOBILE_NO": mobile},
+                                       {"_id": 1, "ptc_code": 1})
     if not doc:
         return jsonify({'error': 'Forbidden'}), 403
     card_url = get_voter_card_url(epic_no)
@@ -1106,7 +1121,8 @@ def user_download_card(epic_no):
         return jsonify({'error': 'Forbidden'}), 403
     card_url = get_voter_card_url(epic_no)
     if card_url:
-        dl_url = card_url.replace('/upload/', f'/upload/fl_attachment:{epic_no}_VoterID/') \
+        download_name = generate_download_name(doc.get('ptc_code', ''))
+        dl_url = card_url.replace('/upload/', f'/upload/fl_attachment:{download_name}/') \
                  if '/upload/' in card_url else card_url
         return redirect(dl_url)
     return jsonify({'error': 'Card not found.'}), 404

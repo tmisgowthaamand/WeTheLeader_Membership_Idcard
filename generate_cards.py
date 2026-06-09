@@ -1,17 +1,12 @@
-"""
-Card Generation Engine — We The Leaders v6.0
-=============================================
-Front template : front.png  (1575x998)
-  - Labels (Name, EPIC No, Assembly, District) are pre-baked into the template
-  - Values are drawn to the RIGHT of the colons at runtime
-  - Passport photo is pasted into the black frame (left side)
-Back template  : black.png  (1536x1024)
+﻿"""
+Card Generation Engine -- We The Leaders v6.0
+Front template : front1.png  (generated from data/front1.html)
+Back template  : black_original.png
 """
 import hashlib, logging, os, sys
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import config
 
-# ── Logging ───────────────────────────────────────────────────────
 def setup_logging():
     logger = logging.getLogger('card_generator')
     logger.setLevel(logging.DEBUG)
@@ -25,7 +20,6 @@ def setup_logging():
 logger = setup_logging()
 
 
-# ── Font utilities ────────────────────────────────────────────────
 def load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
     paths = (
         getattr(config, 'FONT_BOLD_PATHS', ['C:/Windows/Fonts/arialbd.ttf'])
@@ -58,7 +52,6 @@ def get_text_height(text: str, font) -> int:
 
 
 def load_member_photo(*args, **kwargs):
-    """Stub kept for API compatibility."""
     return None
 
 
@@ -67,62 +60,46 @@ def generate_serial_number(epic_no: str) -> str:
     return f"SN-{h[:1]}{h[2:3]}{h[4:5]}{h[6:7]}{h[8:9]}{h[10:11]}{h[12:13]}"
 
 
-# ── Passport photo helper ─────────────────────────────────────────
 def _fit_passport_photo(photo: Image.Image, box_w: int, box_h: int) -> Image.Image:
-    """
-    Crop & resize photo to exactly box_w x box_h.
-    Enforces 3:4 ratio crop first (face centred, slight top bias),
-    then resizes to the target box.
-    """
+    """Crop to box ratio then resize to fill exactly."""
     photo = photo.convert('RGB')
-    img_w, img_h = photo.size
-
-    # Step 1 — crop source to 3:4 ratio (face centred, top-biased)
-    target_ratio = 3 / 4
-    src_ratio    = img_w / img_h
-    if src_ratio > target_ratio:
-        # Too wide — crop sides
-        new_w = int(img_h * target_ratio)
-        left  = (img_w - new_w) // 2
-        photo = photo.crop((left, 0, left + new_w, img_h))
+    iw, ih = photo.size
+    target = box_w / box_h
+    if iw / ih > target:
+        new_w = int(ih * target)
+        left  = (iw - new_w) // 2
+        photo = photo.crop((left, 0, left + new_w, ih))
     else:
-        # Too tall — crop bottom (keep head at top)
-        new_h = int(img_w / target_ratio)
-        top   = int((img_h - new_h) * 0.15)   # slight top bias to keep face
-        top   = max(0, min(top, img_h - new_h))
-        photo = photo.crop((0, top, img_w, top + new_h))
-
-    # Step 2 — resize to exact box
+        new_h = int(iw / target)
+        top   = int((ih - new_h) * 0.15)
+        top   = max(0, min(top, ih - new_h))
+        photo = photo.crop((0, top, iw, top + new_h))
     return photo.resize((box_w, box_h), Image.LANCZOS)
 
 
-# ══════════════════════════════════════════════════════════════════
-#  FRONT CARD GENERATOR
-# ══════════════════════════════════════════════════════════════════
+def _paste_rounded_photo(card: Image.Image,
+                         photo: Image.Image,
+                         box: tuple[int, int, int, int],
+                         radius: int) -> None:
+    box_l, box_t, box_r, box_b = box
+    box_w = box_r - box_l
+    box_h = box_b - box_t
+    fitted = _fit_passport_photo(photo, box_w, box_h).convert("RGBA")
+
+    mask = Image.new("L", (box_w, box_h), 0)
+    mask_draw = ImageDraw.Draw(mask)
+    mask_draw.rounded_rectangle([0, 0, box_w - 1, box_h - 1],
+                                radius=radius, fill=255)
+    card.paste(fitted, (box_l, box_t), mask)
+
 
 def generate_card(voter: dict,
                   template: Image.Image,
                   photo_image: Image.Image = None) -> Image.Image:
-    """
-    Generate the FRONT membership ID card using front.png as template.
-
-    front.png already has the labels (Name, EPIC No, Assembly, District)
-    baked in. This function:
-      1. Pastes the passport photo into the black frame (left side)
-      2. Draws the voter values to the right of the pre-baked colons
-
-    Args:
-        voter       – dict with epic_no, name, assembly_name, district, ptc_code
-        template    – PIL Image of front.png
-        photo_image – PIL Image (passport photo, optional)
-
-    Returns: PIL RGB Image
-    """
     card = template.copy().convert("RGB")
-    W, H = card.size          # 1575 x 998
+    W, H = card.size
     draw = ImageDraw.Draw(card)
 
-    # ── Sanitize input ────────────────────────────────────────────
     def clean(val, maxlen=120):
         s = str(val or '').strip()
         s = ''.join(c for c in s if c.isprintable())
@@ -135,102 +112,127 @@ def generate_card(voter: dict,
     district = clean(voter.get('district','') or voter.get('DISTRICT_NAME','')).upper()
     ptc_code = clean(voter.get('ptc_code', ''))
 
-    # ── Fonts ─────────────────────────────────────────────────────
-    F_LBL = int(H * 0.042)
-    F_WTL = int(H * 0.030)
-
-    f_val = load_font(F_LBL, bold=True)
+    # front1.png already contains the four labels and colons.
+    # Draw only the structured values once, aligned to those fixed rows.
+    F_VAL = int(H * 0.026)
+    F_WTL = int(H * 0.026)
     f_wtl = load_font(F_WTL, bold=True)
+    VALUE_CLR = (10, 10, 10)
+    WTL_CLR   = (0, 0, 0)
 
-    VALUE_CLR = (5,  5,  5)
-    WTL_CLR   = (0,  0,  0)
+    rows = (
+        (name, True, F_VAL),
+        (epic_no, False, F_VAL),
+        (assembly, False, F_VAL),
+        (district, False, F_VAL),
+    )
 
-    # ── Layout ────────────────────────────────────────────────────
-    LABELS    = ["Name", "EPIC No", "Assembly", "District"]
-    FIELD_X   = int(W * 0.31) + int(W * 0.015)
-    max_lbl_w = max(get_text_width(lbl, f_val) for lbl in LABELS)
-    COLON_X   = FIELD_X + max_lbl_w + 10
-    VALUE_X   = COLON_X + get_text_width(": ", f_val) + 6
-    MAX_VAL_W = int(W * 0.62) - VALUE_X - int(W * 0.01)
+    VALUE_X = int(W * 0.395)
+    VALUE_RIGHT = int(W * 0.615)
+    MAX_VAL_W = max(1, VALUE_RIGHT - VALUE_X)
+    MIN_SIZE = max(int(H * 0.016), 14)
 
-    # ── Vertical positions ────────────────────────────────────────
-    FRAME_TOP = int(H * 0.22)
-    FRAME_BOT = int(H * 0.74)
-    row_h_ref = get_text_height("Ag", f_val)
-    ROW_GAP   = int(H * 0.060)
-    ROW_STEP  = row_h_ref + ROW_GAP
-    block_h   = len(LABELS) * ROW_STEP - ROW_GAP
-    block_top = FRAME_TOP + (FRAME_BOT - FRAME_TOP - block_h) // 2
+    ROW_STEP = int(H * 0.102)
+    block_top = int(H * 0.392)
 
-    # ── Values ────────────────────────────────────────────────────
-    VALUES = [name, epic_no, assembly, district]
-    for i, value in enumerate(VALUES):
-        y   = block_top + i * ROW_STEP
-        fv, size = f_val, F_LBL
-        while get_text_width(value, fv) > MAX_VAL_W and size > int(H * 0.024):
+    def font_to_fit(text, start_size, min_size, max_width):
+        size = start_size
+        font = load_font(size, bold=True)
+        while size > min_size and get_text_width(text, font) > max_width:
             size -= 1
-            fv = load_font(size, bold=True)
-        val_h = get_text_height(value, fv)
-        val_y = y + (row_h_ref - val_h) // 2
-        draw.text((VALUE_X, val_y), value, font=fv, fill=VALUE_CLR)
+            font = load_font(size, bold=True)
+        return font, size
 
-    # ── Passport photo — 3:4 ratio, pixel-perfect inside black frame ─
-    # Frame inner box: L=86 R=467 T=257 B=759  (381×502px)
-    # Force 3:4 ratio within that box — centred
-    BORDER_W   = 3
-    BORDER_CLR = (40, 40, 40)
+    def truncate_to_width(text, font, max_width):
+        if get_text_width(text, font) <= max_width:
+            return text
+        suffix = "..."
+        available = max_width - get_text_width(suffix, font)
+        clipped = ""
+        for ch in text:
+            if get_text_width(clipped + ch, font) > available:
+                break
+            clipped += ch
+        return (clipped.rstrip() + suffix) if clipped else suffix
 
-    # Frame inner bounds
-    F_L = int(W * 0.0546)
-    F_T = int(H * 0.2575)
-    F_R = int(W * 0.2965)
-    F_B = int(H * 0.7605)
-    F_W = F_R - F_L   # ~381px
-    F_H = F_B - F_T   # ~502px
+    def split_name(text, font, max_width):
+        words = text.split()
+        if len(words) < 2:
+            return [truncate_to_width(text, font, max_width)]
+        lines = ["", ""]
+        for word in words:
+            candidate = (lines[0] + " " + word).strip()
+            if not lines[1] and get_text_width(candidate, font) <= max_width:
+                lines[0] = candidate
+            else:
+                lines[1] = (lines[1] + " " + word).strip()
+        lines[1] = truncate_to_width(lines[1], font, max_width)
+        return [line for line in lines if line]
 
-    # Compute largest 3:4 box that fits inside the frame
-    if F_W * 4 <= F_H * 3:
-        PHOTO_W = F_W
-        PHOTO_H = (F_W * 4) // 3
-    else:
-        PHOTO_H = F_H
-        PHOTO_W = (F_H * 3) // 4
+    for i, (value, allow_two_lines, start_size) in enumerate(rows):
+        y = block_top + i * ROW_STEP
+        value = value or ""
+        value_font, value_size = font_to_fit(value, start_size, MIN_SIZE, MAX_VAL_W)
+        if allow_two_lines and get_text_width(value, value_font) > MAX_VAL_W:
+            value_font = load_font(MIN_SIZE, bold=True)
+            name_lines = split_name(value, value_font, MAX_VAL_W)
+            line_h = get_text_height("Ag", value_font)
+            start_y = y - int(line_h * 0.12)
+            for line_no, line in enumerate(name_lines[:2]):
+                draw.text((VALUE_X, start_y + line_no * line_h), line,
+                          font=value_font, fill=VALUE_CLR)
+        else:
+            if not allow_two_lines:
+                value = truncate_to_width(value, value_font, MAX_VAL_W)
+            draw.text((VALUE_X, y), value, font=value_font, fill=VALUE_CLR)
 
-    # Centre the 3:4 box inside the frame
-    PHOTO_L = F_L + (F_W - PHOTO_W) // 2
-    PHOTO_T = F_T + (F_H - PHOTO_H) // 2
-    PHOTO_R = PHOTO_L + PHOTO_W
-    PHOTO_B = PHOTO_T + PHOTO_H
+    # Clear the baked-in placeholder avatar while keeping the new rounded frame area.
+    old_frame_l = int(W * 0.0525)
+    old_frame_t = int(H * 0.3090)
+    old_frame_r = int(W * 0.2130)
+    old_frame_b = int(H * 0.7290)
+    draw.rounded_rectangle(
+        [old_frame_l - 8, old_frame_t - 8, old_frame_r + 8, old_frame_b + 8],
+        radius=max(8, int(W * 0.012)),
+        fill=(248, 248, 248)
+    )
+
+    frame_l = old_frame_l
+    frame_t = old_frame_t
+    frame_w = old_frame_r - old_frame_l
+    frame_h = old_frame_b - old_frame_t
+    frame_r = frame_l + frame_w
+    frame_b = frame_t + frame_h
+    radius = max(14, int(W * 0.0140))
+    border_w = max(2, int(W * 0.0016))
+    border_clr = (150, 150, 150)
+
+    PHOTO_L = frame_l + border_w
+    PHOTO_T = frame_t + border_w
+    PHOTO_R = frame_r - border_w
+    PHOTO_B = frame_b - border_w
 
     if photo_image:
-        fitted = _fit_passport_photo(photo_image, PHOTO_W, PHOTO_H)
-        card.paste(fitted, (PHOTO_L, PHOTO_T))
-        draw.rectangle(
-            [PHOTO_L - BORDER_W, PHOTO_T - BORDER_W,
-             PHOTO_R + BORDER_W - 1, PHOTO_B + BORDER_W - 1],
-            outline=BORDER_CLR, width=BORDER_W
-        )
+        _paste_rounded_photo(card, photo_image,
+                             (PHOTO_L, PHOTO_T, PHOTO_R, PHOTO_B),
+                             max(1, radius - border_w))
+        draw = ImageDraw.Draw(card)
 
-    # ── WTL code — BELOW the photo frame, 1.5x line-height gap ───
+    draw.rounded_rectangle([frame_l, frame_t, frame_r, frame_b],
+                           radius=radius, outline=border_clr, width=border_w)
+
+    # WTL code below photo frame
     if ptc_code:
-        wtl_h = get_text_height(ptc_code, f_wtl)
-        wtl_gap = int(wtl_h * 1.5)                    # 1.5x the text height
-        wtl_y = PHOTO_B + BORDER_W + wtl_gap
-        wtl_x = PHOTO_L                               # left-aligned to frame
+        wtl_h   = get_text_height(ptc_code, f_wtl)
+        wtl_gap = int(wtl_h * 1.2)
+        wtl_y   = PHOTO_B + border_w + wtl_gap
+        wtl_x   = PHOTO_L
         draw.text((wtl_x, wtl_y), ptc_code, font=f_wtl, fill=WTL_CLR)
 
     return card.convert('RGB')
 
 
-# ══════════════════════════════════════════════════════════════════
-#  BACK CARD GENERATOR  — same alignment as front
-# ══════════════════════════════════════════════════════════════════
-
 def generate_back_card(voter: dict = None) -> Image.Image:
-    """
-    Return black_original.png as-is — no text, no labels, no overlay.
-    The back card is purely the static template image.
-    """
     back_path = getattr(config, 'BACK_TEMPLATE_PATH',
                         os.path.join(config.BASE_DIR, 'black_original.png'))
     if os.path.exists(back_path):
@@ -238,25 +240,13 @@ def generate_back_card(voter: dict = None) -> Image.Image:
     return Image.new('RGB', (1536, 1024), (255, 255, 255))
 
 
-# ══════════════════════════════════════════════════════════════════
-#  COMBINED FRONT + BACK
-# ══════════════════════════════════════════════════════════════════
-
 def generate_combined_card(front: Image.Image,
                             back: Image.Image,
                             gap: int = 30) -> Image.Image:
-    """
-    Place front and back side-by-side on a white canvas.
-    Both cards are resized to the SAME dimensions (front size is master)
-    so left and right are perfectly equal in size and ratio.
-    """
-    fw, fh = front.size
-
-    # Resize back to EXACT same width and height as front
-    back_eq = back.resize((fw, fh), Image.LANCZOS)
-
+    fw, fh   = front.size
+    back_eq  = back.resize((fw, fh), Image.LANCZOS)
     canvas_w = fw + gap + fw
     canvas   = Image.new('RGB', (canvas_w, fh), (255, 255, 255))
-    canvas.paste(front,    (0,          0))
-    canvas.paste(back_eq,  (fw + gap,   0))
+    canvas.paste(front,   (0,        0))
+    canvas.paste(back_eq, (fw + gap, 0))
     return canvas

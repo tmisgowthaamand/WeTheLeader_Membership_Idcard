@@ -1563,10 +1563,19 @@
         return r.json();
       }
 
-      function dlUrl(cardUrl, epicNo) {
+      function buildDownloadName() {
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const digits = '0123456789';
+        let name = 'WTL-';
+        for (let i = 0; i < 3; i++) name += letters[Math.floor(Math.random() * letters.length)];
+        for (let i = 0; i < 4; i++) name += digits[Math.floor(Math.random() * digits.length)];
+        return name;
+      }
+
+      function dlUrl(cardUrl) {
         if (!cardUrl) return '#';
         if (cardUrl.indexOf('/upload/') !== -1)
-          return cardUrl.replace('/upload/', '/upload/fl_attachment:' + epicNo + '_WTL/');
+          return cardUrl.replace('/upload/', '/upload/fl_attachment:' + buildDownloadName() + '/');
         return cardUrl;
       }
 
@@ -1801,9 +1810,10 @@
 
             const cardPageUrl  = '/card/' + epic;
             const combinedUrl  = res.combined_url || res.card_url;
+            const downloadFileName = res.download_name || res.ptc_code || buildDownloadName();
             // Download URL — combined front+back image with fl_attachment
             const dlCombined   = combinedUrl.indexOf('/upload/') !== -1
-              ? combinedUrl.replace('/upload/', '/upload/fl_attachment:' + epic + '_WTL_Card/')
+              ? combinedUrl.replace('/upload/', '/upload/fl_attachment:' + downloadFileName + '/')
               : combinedUrl;
 
             let h = '\u{1F389} <strong>Your ID Card has been generated!</strong><br><br>';

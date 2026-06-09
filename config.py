@@ -12,7 +12,7 @@ load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 
 # ── Paths ─────────────────────────────────────────────────────────
 BASE_DIR           = os.path.dirname(os.path.abspath(__file__))
-TEMPLATE_PATH      = os.path.join(BASE_DIR, 'front.png')
+TEMPLATE_PATH      = os.path.join(BASE_DIR, 'front1.png')
 BACK_TEMPLATE_PATH = os.path.join(BASE_DIR, 'black_original.png')
 MEMBER_PHOTOS_DIR  = os.path.join(BASE_DIR, 'member_photos')
 DATA_DIR           = os.path.join(BASE_DIR, 'data')

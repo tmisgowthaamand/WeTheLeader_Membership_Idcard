@@ -309,7 +309,7 @@
   </div>
 
   <!-- Action buttons -->
-  {% set dl_combined = combined_url.replace('/upload/', '/upload/fl_attachment:' ~ epic_no ~ '_WTL_Card/') if '/upload/' in combined_url else combined_url %}
+  {% set dl_combined = combined_url.replace('/upload/', '/upload/fl_attachment:' ~ download_name ~ '/') if '/upload/' in combined_url else combined_url %}
   <div class="action-bar">
     <a href="{{ dl_combined }}" class="btn-action btn-dl" target="_blank">
       <i class="bi bi-download"></i> Download (Front + Back)
@@ -348,7 +348,7 @@
     <a href="https://wa.me/?text=I%20just%20got%20my%20We%20The%20Leaders%20Member%20ID%20Card!" target="_blank" class="share-btn wa" title="Share on WhatsApp"><i class="bi bi-whatsapp"></i></a>
     <a href="https://www.facebook.com/sharer/sharer.php" target="_blank" class="share-btn fb" title="Share on Facebook"><i class="bi bi-facebook"></i></a>
     <a href="https://twitter.com/intent/tweet?text=I%20just%20got%20my%20We%20The%20Leaders%20Member%20ID%20Card!" target="_blank" class="share-btn tw" title="Share on Twitter"><i class="bi bi-twitter-x"></i></a>
-    <a href="{{ dl_url }}" class="share-btn dl" title="Download" target="_blank"><i class="bi bi-download"></i></a>
+    <a href="{{ dl_combined }}" class="share-btn dl" title="Download" target="_blank"><i class="bi bi-download"></i></a>
   </div>
 
   <!-- Footer -->
