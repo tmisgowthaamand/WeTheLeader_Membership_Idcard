@@ -39,6 +39,7 @@ PHOTO_H = int(PHOTO_W * 9 / 7)
 sample_photo = make_placeholder_photo(PHOTO_W, PHOTO_H)
 
 card = generate_card(VOTER, template, sample_photo)
-card.save(OUTPUT, quality=95)
+card.save(OUTPUT, quality=config.JPEG_QUALITY,
+          dpi=(config.CARD_DPI, config.CARD_DPI))
 print(f"Saved: {OUTPUT}  ({W}x{H})")
 print("Open dummy_card_output.jpeg to preview.")

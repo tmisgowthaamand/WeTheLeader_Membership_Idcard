@@ -342,7 +342,8 @@ def upload_photo_to_cloudinary(image: Image.Image, epic_no: str) -> str:
 def upload_card_to_cloudinary(card_image: Image.Image, epic_no: str) -> str:
     safe_id = epic_no.replace('/', '_').replace('\\', '_')
     buf = io.BytesIO()
-    card_image.save(buf, format='JPEG', quality=config.JPEG_QUALITY)
+    card_image.save(buf, format='JPEG', quality=config.JPEG_QUALITY,
+                    dpi=(config.CARD_DPI, config.CARD_DPI))
     buf.seek(0)
     result = cloudinary.uploader.upload(buf, folder=config.CLOUDINARY_CARDS_FOLDER,
                                          public_id=safe_id, overwrite=True,
@@ -558,7 +559,8 @@ def demo_generate():
         img_out = front_card
 
     buf = io.BytesIO()
-    img_out.save(buf, format='JPEG', quality=95)
+    img_out.save(buf, format='JPEG', quality=config.JPEG_QUALITY,
+                 dpi=(config.CARD_DPI, config.CARD_DPI))
     buf.seek(0)
 
     # Return as base64 JSON so the page can show it without a page reload
@@ -961,7 +963,8 @@ def chat_generate_card():
 
         # ── Upload front card ─────────────────────────────────────
         card_buf = io.BytesIO()
-        card_image.save(card_buf, format='JPEG', quality=95)
+        card_image.save(card_buf, format='JPEG', quality=config.JPEG_QUALITY,
+                        dpi=(config.CARD_DPI, config.CARD_DPI))
         card_buf.seek(0)
         card_up  = cloudinary.uploader.upload(
             card_buf.getvalue(),
@@ -977,7 +980,8 @@ def chat_generate_card():
             back_img     = generate_back_card(voter)
             combined     = generate_combined_card(card_image, back_img)
             comb_buf = io.BytesIO()
-            combined.save(comb_buf, format='JPEG', quality=95)
+            combined.save(comb_buf, format='JPEG', quality=config.JPEG_QUALITY,
+                          dpi=(config.CARD_DPI, config.CARD_DPI))
             comb_buf.seek(0)
             comb_up = cloudinary.uploader.upload(
                 comb_buf.getvalue(),

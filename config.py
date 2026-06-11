@@ -51,11 +51,17 @@ FONT_MIN_SIZE = 14
 FONT_COLOR    = (0, 0, 0)
 
 FONT_PATHS = [
+    os.path.join(BASE_DIR, 'static', 'fonts', 'Montserrat-Regular.ttf'),
+    os.path.join(BASE_DIR, 'Montserrat-Regular.ttf'),
+    'C:/Windows/Fonts/Montserrat-Regular.ttf',
     'C:/Windows/Fonts/arial.ttf',
     '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
     '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
 ]
 FONT_BOLD_PATHS = [
+    os.path.join(BASE_DIR, 'static', 'fonts', 'Montserrat-Bold.ttf'),
+    os.path.join(BASE_DIR, 'Montserrat-Bold.ttf'),
+    'C:/Windows/Fonts/Montserrat-Bold.ttf',
     'C:/Windows/Fonts/arialbd.ttf',
     '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
     '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
@@ -81,3 +87,4 @@ QR_Y_PCT        = 0.012   # margin from bottom
 
 # ── Output ────────────────────────────────────────────────────────
 JPEG_QUALITY = 95
+CARD_DPI = 600

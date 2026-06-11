@@ -19,6 +19,10 @@ def setup_logging():
 
 logger = setup_logging()
 
+MEMBER_NAME_FONT_SIZE = 26
+MEMBER_NAME_LETTER_SPACING = -0.5
+MEMBER_NAME_WORD_SPACING = 2
+
 
 def load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
     paths = (
@@ -45,6 +49,30 @@ def get_text_width(text: str, font) -> int:
     return bb[2] - bb[0]
 
 
+def get_spaced_text_width(text: str,
+                          font,
+                          letter_spacing: float = 0,
+                          word_spacing: float = 0) -> float:
+    if not text:
+        return 0
+    width = sum(get_text_width(ch, font) for ch in text)
+    spaces = text.count(" ")
+    return width + max(0, len(text) - 1) * letter_spacing + spaces * word_spacing
+
+
+def draw_spaced_text(draw: ImageDraw.ImageDraw,
+                     xy: tuple[int, int],
+                     text: str,
+                     font,
+                     fill,
+                     letter_spacing: float = 0,
+                     word_spacing: float = 0) -> None:
+    x, y = xy
+    for ch in text:
+        draw.text((x, y), ch, font=font, fill=fill)
+        x += get_text_width(ch, font) + letter_spacing + (word_spacing if ch == " " else 0)
+
+
 def get_text_height(text: str, font) -> int:
     draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
     bb = draw.textbbox((0, 0), text, font=font)
@@ -53,6 +81,15 @@ def get_text_height(text: str, font) -> int:
 
 def load_member_photo(*args, **kwargs):
     return None
+
+
+def format_member_name(text: str) -> str:
+    text = " ".join(str(text or "").split())
+    return text.upper()
+
+
+def member_name_font_size(text: str) -> int:
+    return MEMBER_NAME_FONT_SIZE
 
 
 def generate_serial_number(epic_no: str) -> str:
@@ -93,6 +130,28 @@ def _paste_rounded_photo(card: Image.Image,
     card.paste(fitted, (box_l, box_t), mask)
 
 
+def _sample_card_background(card: Image.Image,
+                            box: tuple[int, int, int, int]) -> tuple[int, int, int]:
+    W, H = card.size
+    l, t, r, b = box
+    pad = max(12, int(W * 0.010))
+    samples = []
+    sample_boxes = (
+        (max(0, l - pad), max(0, t - pad), min(W, r + pad), max(0, t)),
+        (max(0, l - pad), min(H, b), min(W, r + pad), min(H, b + pad)),
+        (max(0, l - pad), max(0, t), max(0, l), min(H, b)),
+        (min(W, r), max(0, t), min(W, r + pad), min(H, b)),
+    )
+    for sx1, sy1, sx2, sy2 in sample_boxes:
+        if sx2 <= sx1 or sy2 <= sy1:
+            continue
+        region = card.crop((sx1, sy1, sx2, sy2)).resize((1, 1), Image.LANCZOS)
+        samples.append(region.getpixel((0, 0)))
+    if not samples:
+        return (248, 248, 248)
+    return tuple(sum(pixel[i] for pixel in samples) // len(samples) for i in range(3))
+
+
 def generate_card(voter: dict,
                   template: Image.Image,
                   photo_image: Image.Image = None) -> Image.Image:
@@ -106,39 +165,46 @@ def generate_card(voter: dict,
         s = s.replace('{','').replace('}','').replace('$','').replace('\\','')
         return s[:maxlen]
 
-    name     = clean(voter.get('name', '')).upper()
+    name     = format_member_name(clean(voter.get('name', '')))
     epic_no  = clean(voter.get('epic_no', '')).upper()
     assembly = clean(voter.get('assembly_name','') or voter.get('assembly','')).upper()
     district = clean(voter.get('district','') or voter.get('DISTRICT_NAME','')).upper()
     ptc_code = clean(voter.get('ptc_code', ''))
 
-    # front1.png already contains the four labels and colons.
-    # Draw only the structured values once, aligned to those fixed rows.
+    # Draw generated text once over the cleaned front template.
     F_VAL = int(H * 0.026)
     F_WTL = int(H * 0.026)
     f_wtl = load_font(F_WTL, bold=True)
     VALUE_CLR = (10, 10, 10)
     WTL_CLR   = (0, 0, 0)
 
-    rows = (
-        (name, True, F_VAL),
-        (epic_no, False, F_VAL),
-        (assembly, False, F_VAL),
-        (district, False, F_VAL),
-    )
-
-    VALUE_X = int(W * 0.395)
-    VALUE_RIGHT = int(W * 0.615)
-    MAX_VAL_W = max(1, VALUE_RIGHT - VALUE_X)
+    NAME_X = int(W * 0.229)
+    NAME_RIGHT = int(W * 0.675)
+    MAX_NAME_W = max(1, NAME_RIGHT - NAME_X)
     MIN_SIZE = max(int(H * 0.016), 14)
 
     ROW_STEP = int(H * 0.102)
     block_top = int(H * 0.392)
+    FIELD_TOP = block_top + ROW_STEP
+    LABEL_X = NAME_X
+    FIELD_RIGHT = int(W * 0.695)
+    COLON_X = int(W * 0.326)
+    COLON_GAP = int(W * 0.010)
 
     def font_to_fit(text, start_size, min_size, max_width):
         size = start_size
         font = load_font(size, bold=True)
         while size > min_size and get_text_width(text, font) > max_width:
+            size -= 1
+            font = load_font(size, bold=True)
+        return font, size
+
+    def name_font_to_fit(text, max_width):
+        size = member_name_font_size(text)
+        font = load_font(size, bold=True)
+        while size > 12 and get_spaced_text_width(
+            text, font, MEMBER_NAME_LETTER_SPACING, MEMBER_NAME_WORD_SPACING
+        ) > max_width:
             size -= 1
             font = load_font(size, bold=True)
         return font, size
@@ -155,52 +221,49 @@ def generate_card(voter: dict,
             clipped += ch
         return (clipped.rstrip() + suffix) if clipped else suffix
 
-    def split_name(text, font, max_width):
-        words = text.split()
-        if len(words) < 2:
-            return [truncate_to_width(text, font, max_width)]
-        lines = ["", ""]
-        for word in words:
-            candidate = (lines[0] + " " + word).strip()
-            if not lines[1] and get_text_width(candidate, font) <= max_width:
-                lines[0] = candidate
-            else:
-                lines[1] = (lines[1] + " " + word).strip()
-        lines[1] = truncate_to_width(lines[1], font, max_width)
-        return [line for line in lines if line]
+    name_font, name_size = name_font_to_fit(name, MAX_NAME_W)
+    draw_spaced_text(draw, (NAME_X, block_top), name, font=name_font,
+                     fill=(0, 0, 0),
+                     letter_spacing=MEMBER_NAME_LETTER_SPACING,
+                     word_spacing=MEMBER_NAME_WORD_SPACING)
 
-    for i, (value, allow_two_lines, start_size) in enumerate(rows):
-        y = block_top + i * ROW_STEP
-        value = value or ""
-        value_font, value_size = font_to_fit(value, start_size, MIN_SIZE, MAX_VAL_W)
-        if allow_two_lines and get_text_width(value, value_font) > MAX_VAL_W:
-            value_font = load_font(MIN_SIZE, bold=True)
-            name_lines = split_name(value, value_font, MAX_VAL_W)
-            line_h = get_text_height("Ag", value_font)
-            start_y = y - int(line_h * 0.12)
-            for line_no, line in enumerate(name_lines[:2]):
-                draw.text((VALUE_X, start_y + line_no * line_h), line,
-                          font=value_font, fill=VALUE_CLR)
-        else:
-            if not allow_two_lines:
-                value = truncate_to_width(value, value_font, MAX_VAL_W)
-            draw.text((VALUE_X, y), value, font=value_font, fill=VALUE_CLR)
+    field_font = load_font(F_VAL, bold=True)
+    field_rows = (
+        ("EPIC NO", epic_no),
+        ("ASSEMBLY", assembly),
+        ("DISTRICT", district),
+    )
+
+    for row_index, (label, value) in enumerate(field_rows):
+        y = FIELD_TOP + row_index * ROW_STEP
+        value_x = COLON_X + get_text_width(":", field_font) + COLON_GAP
+        max_value_w = max(1, FIELD_RIGHT - value_x)
+        value_font, value_size = font_to_fit(value, F_VAL, MIN_SIZE, max_value_w)
+        value = truncate_to_width(value or "", value_font, max_value_w)
+
+        draw.text((LABEL_X, y), label, font=field_font, fill=VALUE_CLR)
+        draw.text((COLON_X, y), ":", font=field_font, fill=VALUE_CLR)
+        draw.text((value_x, y), value, font=value_font, fill=VALUE_CLR)
 
     # Clear the baked-in placeholder avatar while keeping the new rounded frame area.
     old_frame_l = int(W * 0.0525)
     old_frame_t = int(H * 0.3090)
     old_frame_r = int(W * 0.2130)
     old_frame_b = int(H * 0.7290)
+    clear_box = (old_frame_l - 8, old_frame_t - 8, old_frame_r + 8, old_frame_b + 8)
     draw.rounded_rectangle(
-        [old_frame_l - 8, old_frame_t - 8, old_frame_r + 8, old_frame_b + 8],
+        clear_box,
         radius=max(8, int(W * 0.012)),
-        fill=(248, 248, 248)
+        fill=_sample_card_background(card, clear_box)
     )
 
-    frame_l = old_frame_l
-    frame_t = old_frame_t
-    frame_w = old_frame_r - old_frame_l
-    frame_h = old_frame_b - old_frame_t
+    old_frame_w = old_frame_r - old_frame_l
+    old_frame_h = old_frame_b - old_frame_t
+    photo_scale = 0.74
+    frame_w = int(old_frame_w * photo_scale)
+    frame_h = int(old_frame_h * photo_scale)
+    frame_l = old_frame_l + (old_frame_w - frame_w) // 2
+    frame_t = old_frame_t + (old_frame_h - frame_h) // 2
     frame_r = frame_l + frame_w
     frame_b = frame_t + frame_h
     radius = max(14, int(W * 0.0140))

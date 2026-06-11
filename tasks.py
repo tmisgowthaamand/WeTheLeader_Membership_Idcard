@@ -133,7 +133,8 @@ def generate_card_async(self, epic_no, mobile, photo_base64=None, ptc_code='',
         self.update_state(state='PROCESSING', meta={'status': 'Uploading card'})
 
         buf = io.BytesIO()
-        card_image.save(buf, format='JPEG', quality=95)
+        card_image.save(buf, format='JPEG', quality=config.JPEG_QUALITY,
+                        dpi=(config.CARD_DPI, config.CARD_DPI))
         up2      = cloudinary.uploader.upload(
             buf.getvalue(), folder='generated_cards', public_id=epic_no,
             overwrite=True, resource_type='image'
