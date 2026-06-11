@@ -10,8 +10,10 @@
   <!-- Primary SEO Meta Tags -->
   <title>We The Leaders — Free Membership ID Card Generator | LEAD THE CHANGE</title>
   <meta name="title" content="We The Leaders — Free Membership ID Card Generator | LEAD THE CHANGE">
-  <meta name="description" content="We The Leaders — Official Membership ID Card Generator. LEAD THE CHANGE. Generate your free digital member ID card and join the movement.">
-  <meta name="keywords" content="We The Leaders, We The Leaders, We The Leaders, wetheleaders, wetheleaders, membership card generator, member id card, Tamil Nadu politics 2026, Chennai politics, Sasikala, Sasikala party, சசிகலா, Jayalalithaa, ஜெயலலிதா, Amma, அம்மா, MGR, எம்.ஜி.ஆர், AIADMK, அதிமுக, Tamil Nadu election 2026, தமிழ்நாடு தேர்தல் 2026, digital membership card, political party membership, Chennai political party, Puratchi Thalaivi, புரட்சித் தலைவி, TN politics, South Indian politics, Dravidian politics, party membership registration, free id card generator, voter id, Tamil Nadu party card">
+  <meta name="description"
+    content="We The Leaders — Official Membership ID Card Generator. LEAD THE CHANGE. Generate your free digital member ID card and join the movement.">
+  <meta name="keywords"
+    content="We The Leaders, We The Leaders, We The Leaders, wetheleaders, wetheleaders, membership card generator, member id card, Tamil Nadu politics 2026, Chennai politics, Sasikala, Sasikala party, சசிகலா, Jayalalithaa, ஜெயலலிதா, Amma, அம்மா, MGR, எம்.ஜி.ஆர், AIADMK, அதிமுக, Tamil Nadu election 2026, தமிழ்நாடு தேர்தல் 2026, digital membership card, political party membership, Chennai political party, Puratchi Thalaivi, புரட்சித் தலைவி, TN politics, South Indian politics, Dravidian politics, party membership registration, free id card generator, voter id, Tamil Nadu party card">
   <meta name="author" content="We The Leaders">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <meta name="googlebot" content="index, follow">
@@ -30,13 +32,14 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="/favicon.ico">
   <link rel="shortcut icon" type="image/png" href="/favicon.ico">
-  <link rel="apple-touch-icon" href="/static/banner.jpg">
+  <link rel="apple-touch-icon" href="/static/newfavicon.png">
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.wetheleaders.org/">
   <meta property="og:title" content="We The Leaders — Free Membership ID Card Generator | We The Leaders">
-  <meta property="og:description" content="Join We The Leaders! Generate your free Digital Member ID Card now. Inspired by Amma Jayalalithaa, MGR & Sasikala. Tamil Nadu 2026 political movement. Register and become a proud member today!">
+  <meta property="og:description"
+    content="Join We The Leaders! Generate your free Digital Member ID Card now. Inspired by Amma Jayalalithaa, MGR & Sasikala. Tamil Nadu 2026 political movement. Register and become a proud member today!">
   <meta property="og:image" content="https://www.wetheleaders.org/static/banner.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -49,7 +52,8 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://www.wetheleaders.org/">
   <meta name="twitter:title" content="We The Leaders — Free Membership ID Card Generator | We The Leaders">
-  <meta name="twitter:description" content="Join We The Leaders! Generate your free Digital Member ID Card. Inspired by Amma Jayalalithaa, MGR & Sasikala. Tamil Nadu 2026 political movement.">
+  <meta name="twitter:description"
+    content="Join We The Leaders! Generate your free Digital Member ID Card. Inspired by Amma Jayalalithaa, MGR & Sasikala. Tamil Nadu 2026 political movement.">
   <meta name="twitter:image" content="https://www.wetheleaders.org/static/banner.jpg">
   <meta name="twitter:image:alt" content="We The Leaders Membership Card Generator">
 
@@ -431,6 +435,48 @@
       }
     }
 
+    /* ── Card Preview Tabs (Enhanced) ── */
+    .chat-card-preview-area {
+      margin-top: 10px;
+      margin-bottom: 5px;
+    }
+
+    .chat-card-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .card-tab-btn {
+      flex: 1;
+      background: #f0f2f5;
+      border: 1px solid #d1d7db;
+      border-radius: 8px;
+      padding: 6px 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #54656f;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .card-tab-btn.active {
+      background: #00a884;
+      color: #fff;
+      border-color: #00a884;
+    }
+
+    .bot-card-img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+      transition: transform 0.3s ease;
+    }
+
+    .bot-card-img:hover {
+      transform: scale(1.02);
+    }
+
     @keyframes fadeIn {
       from {
         opacity: 0;
@@ -606,6 +652,44 @@
       margin-top: 16px;
       width: 100%;
       max-width: 320px;
+    }
+
+    /* ── Card Tabs in Chat ── */
+    .chat-card-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 8px;
+      background: rgba(0, 0, 0, 0.05);
+      padding: 4px;
+      border-radius: 8px;
+    }
+
+    .chat-card-tabs .card-tab-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 6px 2px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #667781;
+      transition: all 0.2s;
+    }
+
+    .chat-card-tabs .card-tab-btn.active {
+      background: #fff;
+      color: #008069;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    body.dark-mode .chat-card-tabs {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    body.dark-mode .chat-card-tabs .card-tab-btn.active {
+      background: #2a3942;
+      color: #00a884;
     }
 
     /* ── Input Area ── */
@@ -803,39 +887,49 @@
       width: 100%;
       margin: 8px 0 4px;
     }
+
     .chat-flip-wrapper {
       perspective: 900px;
       width: 100%;
     }
+
     .chat-flip-inner {
       position: relative;
       width: 100%;
-      padding-top: 66.67%;   /* 2:3 aspect ratio = 1024/1536 */
+      padding-top: 66.67%;
+      /* 2:3 aspect ratio = 1024/1536 */
       transform-style: preserve-3d;
       transition: transform 0.75s cubic-bezier(0.4, 0.2, 0.2, 1);
       cursor: pointer;
     }
+
     .chat-flip-inner.flipped {
       transform: rotateY(180deg);
     }
+
     .chat-flip-front,
     .chat-flip-back {
       position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
     }
+
     .chat-flip-front img,
     .chat-flip-back img {
-      width: 100%; height: 100%;
+      width: 100%;
+      height: 100%;
       object-fit: cover;
       display: block;
       border-radius: 12px;
     }
+
     .chat-flip-back {
       transform: rotateY(180deg);
     }
@@ -939,24 +1033,47 @@
       font-size: 0.88rem;
       color: #333;
     }
+
     .sidebar-settings-row .setting-label {
       display: flex;
       align-items: center;
       gap: 8px;
       font-weight: 500;
     }
+
     .sidebar-settings-row .setting-label i {
       font-size: 1.1rem;
     }
+
     .sidebar-theme-btn {
-      background: none; border: 1px solid #ddd; border-radius: 20px;
-      padding: 5px 14px; font-size: 0.8rem; cursor: pointer;
-      display: flex; align-items: center; gap: 5px; color: #333;
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: #333;
     }
-    .sidebar-theme-btn:hover { background: #f0f0f0; }
-    body.dark-mode .sidebar-settings-row { color: #ccc; }
-    body.dark-mode .sidebar-theme-btn { border-color: #555; color: #ccc; }
-    body.dark-mode .sidebar-theme-btn:hover { background: #333; }
+
+    .sidebar-theme-btn:hover {
+      background: #f0f0f0;
+    }
+
+    body.dark-mode .sidebar-settings-row {
+      color: #ccc;
+    }
+
+    body.dark-mode .sidebar-theme-btn {
+      border-color: #555;
+      color: #ccc;
+    }
+
+    body.dark-mode .sidebar-theme-btn:hover {
+      background: #333;
+    }
 
     body.dark-mode input:checked+.slider {
       background-color: #00a884;
@@ -1056,6 +1173,7 @@
       background: #1a2730 !important;
       border: 1px solid #2a3942;
     }
+
     body.dark-mode .bubble code {
       color: #00a884 !important;
     }
@@ -1064,6 +1182,7 @@
     body.dark-mode .bubble div[style*="background:#e8f5e9"] {
       background: #1a2e1f !important;
     }
+
     body.dark-mode .bubble div[style*="background:#e8f5e9"] span {
       color: #4caf50 !important;
     }
@@ -1083,6 +1202,7 @@
       background: #2a3942 !important;
       color: #e9edef !important;
     }
+
     body.dark-mode .action-btn.cancel:hover {
       background: #36454f !important;
     }
@@ -1092,6 +1212,7 @@
       border-color: #00a884;
       background: rgba(0, 168, 132, 0.05);
     }
+
     body.dark-mode .upload-area p {
       color: #8696a0;
     }
@@ -1124,13 +1245,17 @@
     /* ── Sidebar Overlay ── */
     .sidebar-overlay {
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.4);
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
       z-index: 99;
       opacity: 0;
       visibility: hidden;
       transition: opacity 0.3s, visibility 0.3s;
     }
+
     .sidebar-overlay.open {
       opacity: 1;
       visibility: visible;
@@ -1139,19 +1264,22 @@
     /* ── Sidebar Panel ── */
     .sidebar-panel {
       position: fixed;
-      top: 0; right: -280px;
+      top: 0;
+      right: -280px;
       width: 280px;
       height: 100%;
       background: #fff;
       z-index: 100;
-      box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
       transition: right 0.3s ease;
       display: flex;
       flex-direction: column;
     }
+
     .sidebar-panel.open {
       right: 0;
     }
+
     .sidebar-header {
       background: #008069;
       color: #fff;
@@ -1161,12 +1289,14 @@
       justify-content: space-between;
       flex-shrink: 0;
     }
+
     .sidebar-header h5 {
       margin: 0;
       font-size: 1.1rem;
       font-weight: 700;
       cursor: pointer;
     }
+
     .sidebar-close {
       background: none;
       border: none;
@@ -1175,17 +1305,20 @@
       cursor: pointer;
       padding: 4px;
     }
+
     .sidebar-body {
       flex: 1;
       padding: 20px 16px;
       overflow-y: auto;
     }
+
     .sidebar-user-info {
       text-align: center;
       padding-bottom: 16px;
       border-bottom: 1px solid #e8e8e8;
       margin-bottom: 16px;
     }
+
     .sidebar-user-info .user-icon {
       width: 64px;
       height: 64px;
@@ -1198,6 +1331,7 @@
       font-size: 2rem;
       margin-bottom: 8px;
     }
+
     .sidebar-user-info .user-icon img {
       width: 64px;
       height: 64px;
@@ -1205,16 +1339,19 @@
       object-fit: cover;
       border: 2px solid #00a884;
     }
+
     .sidebar-user-info .user-name {
       font-weight: 700;
       font-size: 1rem;
       color: #111;
       margin-bottom: 2px;
     }
+
     .sidebar-user-info .user-mobile {
       font-size: 0.85rem;
       color: #667;
     }
+
     .sidebar-menu-item {
       display: flex;
       align-items: center;
@@ -1231,31 +1368,39 @@
       width: 100%;
       text-align: left;
     }
+
     .sidebar-menu-item:hover {
       background: #f0f2f5;
     }
+
     .sidebar-menu-item i {
       font-size: 1.2rem;
       width: 24px;
       text-align: center;
     }
+
     .sidebar-menu-item.exit-btn {
       color: #e53935;
     }
+
     .sidebar-menu-item.exit-btn:hover {
       background: #fdecea;
     }
+
     .sidebar-menu-item.register-btn {
       color: #008069;
     }
+
     .sidebar-menu-item.register-btn:hover {
       background: #e8f5e9;
     }
+
     .sidebar-divider {
       height: 1px;
       background: #e0e0e0;
       margin: 8px 0;
     }
+
     .sidebar-section-label {
       font-size: 0.7rem;
       text-transform: uppercase;
@@ -1270,9 +1415,11 @@
       display: none;
       padding: 0;
     }
+
     .sidebar-profile-view.active {
       display: block;
     }
+
     .profile-back-btn {
       display: flex;
       align-items: center;
@@ -1287,11 +1434,16 @@
       width: 100%;
       text-align: left;
     }
-    .profile-back-btn:hover { background: #f0f2f5; }
+
+    .profile-back-btn:hover {
+      background: #f0f2f5;
+    }
+
     .profile-photo-section {
       text-align: center;
       padding: 16px 12px 8px;
     }
+
     .profile-photo-section img {
       width: 80px;
       height: 80px;
@@ -1299,6 +1451,7 @@
       object-fit: cover;
       border: 3px solid #008069;
     }
+
     .profile-photo-placeholder {
       width: 80px;
       height: 80px;
@@ -1310,9 +1463,11 @@
       justify-content: center;
       font-size: 2.2rem;
     }
+
     .profile-detail-list {
       padding: 8px 12px;
     }
+
     .profile-detail-row {
       display: flex;
       justify-content: space-between;
@@ -1321,7 +1476,11 @@
       border-bottom: 1px solid #f0f2f5;
       gap: 8px;
     }
-    .profile-detail-row:last-child { border-bottom: none; }
+
+    .profile-detail-row:last-child {
+      border-bottom: none;
+    }
+
     .profile-detail-label {
       font-size: 0.75rem;
       text-transform: uppercase;
@@ -1330,6 +1489,7 @@
       font-weight: 600;
       flex-shrink: 0;
     }
+
     .profile-detail-value {
       font-size: 0.88rem;
       font-weight: 500;
@@ -1337,63 +1497,98 @@
       text-align: right;
       word-break: break-word;
     }
+
     .profile-card-preview {
       text-align: center;
       padding: 12px;
     }
+
     .profile-card-preview img {
       max-width: 100%;
       border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     }
 
     /* Dark mode sidebar */
     body.dark-mode .sidebar-panel {
       background: #111b21;
     }
+
     body.dark-mode .sidebar-header {
       background: #202c33;
     }
+
     body.dark-mode .sidebar-body {
       color: #e9edef;
     }
+
     body.dark-mode .sidebar-user-info {
       border-bottom-color: #2a3942;
     }
+
     body.dark-mode .sidebar-user-info .user-icon {
       background: #005c4b;
     }
+
     body.dark-mode .sidebar-user-info .user-name {
       color: #e9edef;
     }
+
     body.dark-mode .sidebar-user-info .user-mobile {
       color: #8696a0;
     }
+
     body.dark-mode .sidebar-menu-item {
       color: #e9edef;
     }
+
     body.dark-mode .sidebar-menu-item:hover {
       background: #202c33;
     }
+
     body.dark-mode .sidebar-menu-item.exit-btn {
       color: #ef5350;
     }
+
     body.dark-mode .sidebar-menu-item.exit-btn:hover {
       background: #2c1810;
     }
+
     body.dark-mode .sidebar-menu-item.register-btn {
       color: #00a884;
     }
+
     body.dark-mode .sidebar-menu-item.register-btn:hover {
       background: #0b2a1f;
     }
-    body.dark-mode .sidebar-divider { background: #2a3942; }
-    body.dark-mode .sidebar-section-label { color: #8696a0; }
-    body.dark-mode .profile-back-btn { color: #00a884; }
-    body.dark-mode .profile-back-btn:hover { background: #202c33; }
-    body.dark-mode .profile-detail-row { border-bottom-color: #2a3942; }
-    body.dark-mode .profile-detail-label { color: #8696a0; }
-    body.dark-mode .profile-detail-value { color: #e9edef; }
+
+    body.dark-mode .sidebar-divider {
+      background: #2a3942;
+    }
+
+    body.dark-mode .sidebar-section-label {
+      color: #8696a0;
+    }
+
+    body.dark-mode .profile-back-btn {
+      color: #00a884;
+    }
+
+    body.dark-mode .profile-back-btn:hover {
+      background: #202c33;
+    }
+
+    body.dark-mode .profile-detail-row {
+      border-bottom-color: #2a3942;
+    }
+
+    body.dark-mode .profile-detail-label {
+      color: #8696a0;
+    }
+
+    body.dark-mode .profile-detail-value {
+      color: #e9edef;
+    }
   </style>
 </head>
 
@@ -1404,9 +1599,7 @@
 
     <!-- Header -->
     <div class="chat-header">
-      <div class="avatar"><img
-          src="/static/newfavicon.png"
-          alt="Logo"></div>
+      <div class="avatar"><img src="/static/newfavicon.png" alt="Logo"></div>
       <div class="info" style="display: flex; align-items: center;">
         <img src="{{ url_for('static', filename='new-name-logo.png') }}" alt="We The Leaders"
           style="height: 62px; width: auto;">
@@ -1474,7 +1667,9 @@
     <input type="file" id="photoInput" accept="image/png,image/jpeg,image/jpg,image/bmp">
     <input type="file" id="cameraInput" accept="image/png,image/jpeg,image/jpg" capture="environment">
     <input type="file" id="passportPhotoInput" accept="image/png,image/jpeg,image/jpg,image/bmp" style="display:none;">
-    <input type="file" id="passportCameraInput" accept="image/png,image/jpeg,image/jpg" capture="user" style="display:none;">
+    <input type="file" id="passportCameraInput" accept="image/png,image/jpeg,image/jpg" capture="user"
+      style="display:none;">
+    <canvas id="cropCanvas" style="display:none;"></canvas>
   </div>
 
   <script>
@@ -1488,22 +1683,24 @@
 
       /* ── States ── */
       const S = {
-        WELCOME:     0,
-        AWAIT_EPIC:  1,
-        CONFIRM:     2,
+        WELCOME: 0,
+        AWAIT_EPIC: 1,
+        CONFIRM: 2,
         AWAIT_PHOTO: 3,
-        GENERATING:  4,
-        DONE:        5,
+        GENERATING: 4,
+        DONE: 5,
       };
-      let state     = S.WELCOME;
-      let epic      = '';
-      let voter     = null;
+      let state = S.WELCOME;
+      let epic = '';
+      let voter = null;
       let photoFile = null;
+      let croppedPhotoB64 = null;
 
       /* ── DOM refs ── */
-      const chatEl  = document.getElementById('chatMessages');
-      const input   = document.getElementById('messageInput');
+      const input = document.getElementById('messageInput');
       const sendBtn = document.getElementById('sendBtn');
+      const chatEl = document.getElementById('chatMessages');
+
 
       /* ── Helpers ── */
       function scrollBottom() {
@@ -1515,7 +1712,7 @@
         row.className = 'message bot';
         row.innerHTML = `
           <img src="/static/newfavicon.png" class="bot-avatar-img" alt="Bot">
-          <div class="bubble">${html}<span class="time">${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</span></div>`;
+          <div class="bubble">${html}<span class="time">${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span></div>`;
         chatEl.appendChild(row);
         scrollBottom();
       }
@@ -1523,7 +1720,7 @@
       function userMsg(html) {
         const row = document.createElement('div');
         row.className = 'message user';
-        row.innerHTML = `<div class="bubble">${html}<span class="time">${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</span></div>`;
+        row.innerHTML = `<div class="bubble">${html}<span class="time">${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span></div>`;
         chatEl.appendChild(row);
         scrollBottom();
       }
@@ -1540,7 +1737,7 @@
         if (el) el.remove();
       }
 
-      function lockInput()   { input.disabled = true;  sendBtn.disabled = true; }
+      function lockInput() { input.disabled = true; sendBtn.disabled = true; }
       function unlockInput() { input.disabled = false; sendBtn.disabled = false; input.focus(); }
 
       function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -1579,10 +1776,54 @@
         return cardUrl;
       }
 
+      window.switchBotTab = function (btn, side, front, back, combined) {
+        const wrap = btn.closest('.chat-card-preview-area');
+        if (!wrap) return;
+        wrap.querySelectorAll('.card-tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const img = wrap.querySelector('.bot-card-img');
+        if (img) {
+          if (side === 'front') img.src = front;
+          else if (side === 'back') img.src = back;
+          else if (side === 'combined') img.src = combined;
+        }
+        // Update download link if it's the combined view
+        const dl = wrap.querySelector('.download-btn');
+        if (dl) {
+          if (side === 'combined') dl.href = combined;
+          else if (side === 'front') dl.href = front;
+          else if (side === 'back') dl.href = back;
+        }
+      };
+
+      // Helper to handle data URL download without top-frame navigation error
+      window.handleDownload = function (e, btn) {
+        const url = btn.href;
+        if (url.startsWith('data:')) {
+          e.preventDefault();
+          const name = btn.getAttribute('download') || 'card.jpg';
+          const parts = url.split(',');
+          const mime = parts[0].match(/:(.*?);/)[1];
+          const bstr = atob(parts[1]);
+          let n = bstr.length;
+          const u8arr = new Uint8Array(n);
+          while (n--) u8arr[n] = bstr.charCodeAt(n);
+          const blob = new Blob([u8arr], { type: mime });
+          const blobUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = name;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(blobUrl);
+        }
+      };
+
       /* ── Init ── */
       function init() {
         state = S.WELCOME;
-        epic  = '';
+        epic = '';
         voter = null;
         input.value = '';
         sendBtn.disabled = false;
@@ -1602,7 +1843,7 @@
                 <i class="bi bi-play-circle-fill me-1"></i> Start
               </button>
             </div>
-            <span class="time">${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</span>
+            <span class="time">${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
           </div>`;
         chatEl.appendChild(row);
         scrollBottom();
@@ -1656,11 +1897,11 @@
 
             voter = res.voter;
             const v = res.voter;
-            const name     = ((v.FM_NAME_EN || v.name || '') + ' ' + (v.LASTNAME_EN || '')).trim() || v.name || '';
+            const name = ((v.FM_NAME_EN || v.name || '') + ' ' + (v.LASTNAME_EN || '')).trim() || v.name || '';
             const assembly = v.ASSEMBLY_NAME || v.assembly_name || '';
             const district = v.DISTRICT_NAME || v.district || '';
-            const gender   = v.GENDER || v.sex || '';
-            const age      = v.AGE || v.age || '';
+            const gender = v.GENDER || v.sex || '';
+            const age = v.AGE || v.age || '';
 
             /* Build voter details card */
             let h = '\u2705 <strong>Voter Found!</strong><br><br>';
@@ -1670,7 +1911,7 @@
             h += `<div class="detail-row"><span class="detail-label">Assembly</span><span class="detail-value">${assembly}</span></div>`;
             h += `<div class="detail-row"><span class="detail-label">District</span><span class="detail-value">${district}</span></div>`;
             if (gender) h += `<div class="detail-row"><span class="detail-label">Gender</span><span class="detail-value">${gender}</span></div>`;
-            if (age)    h += `<div class="detail-row"><span class="detail-label">Age</span><span class="detail-value">${age}</span></div>`;
+            if (age) h += `<div class="detail-row"><span class="detail-label">Age</span><span class="detail-value">${age}</span></div>`;
             h += '</div><br>';
             h += 'Is this your details? Click <strong>Confirm</strong> to generate your ID Card.';
             h += '<div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">';
@@ -1746,7 +1987,6 @@
         const file = e.target.files && e.target.files[0];
         if (!file) return;
 
-        // 10 MB limit
         if (file.size > 10 * 1024 * 1024) {
           botMsg('\u274C File too large. Please upload a photo under 10 MB.');
           return;
@@ -1754,19 +1994,44 @@
 
         photoFile = file;
 
-        // Show preview + confirm generate button
+        // Use demo logic for cropping
         const reader = new FileReader();
-        reader.onload = function(ev) {
-          const previewArea = document.getElementById('photoPreviewArea');
-          if (previewArea) {
-            previewArea.innerHTML =
-              '<img src="' + ev.target.result + '" style="max-width:120px;max-height:160px;border-radius:8px;border:2px solid #00a884;display:block;margin-bottom:10px;">' +
-              '<button class="btn-reply" id="proceedGenerateBtn" style="background:#2e7d32;color:#fff;">' +
-              '<i class="bi bi-lightning-charge-fill me-1"></i> Generate Card</button>';
+        reader.onload = function (ev) {
+          const img = new Image();
+          img.onload = function () {
+            const sw = img.width, sh = img.height;
+            let cropW, cropH, cropX, cropY;
+            // 3:4 target ratio (approximately)
+            const targetRatio = 356 / 542;
+            if (sw / sh > targetRatio) {
+              cropH = sh; cropW = Math.floor(sh * targetRatio);
+              cropX = Math.floor((sw - cropW) / 2); cropY = 0;
+            } else {
+              cropW = sw; cropH = Math.floor(sw / targetRatio);
+              cropX = 0; cropY = Math.floor((sh - cropH) * 0.15); // Shift up slightly for faces
+              cropY = Math.max(0, Math.min(cropY, sh - cropH));
+            }
+            const canvas = document.getElementById('cropCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 381; canvas.height = 580;
+            ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, 381, 580);
+            croppedPhotoB64 = canvas.toDataURL('image/jpeg', 0.95);
 
-            document.getElementById('proceedGenerateBtn').addEventListener('click', doGenerate);
-          }
-          userMsg('<i class="bi bi-image-fill me-1"></i> Photo selected: <strong>' + file.name + '</strong>');
+            const previewArea = document.getElementById('photoPreviewArea');
+            if (previewArea) {
+              previewArea.innerHTML =
+                '<div style="position:relative;display:inline-block;">' +
+                '<img src="' + croppedPhotoB64 + '" style="max-width:120px;max-height:180px;border-radius:8px;border:2px solid #00a884;display:block;margin-bottom:10px;">' +
+                '<span style="position:absolute;bottom:15px;right:5px;background:#00a884;color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;">Cropped</span>' +
+                '</div>' +
+                '<button class="btn-reply" id="proceedGenerateBtn" style="background:#2e7d32;color:#fff;">' +
+                '<i class="bi bi-lightning-charge-fill me-1"></i> Generate Card</button>';
+
+              document.getElementById('proceedGenerateBtn').addEventListener('click', doGenerate);
+            }
+            userMsg('<i class="bi bi-image-fill me-1"></i> Photo ready for ID card.');
+          };
+          img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
       }
@@ -1793,7 +2058,11 @@
         try {
           const fd = new FormData();
           fd.append('epic_no', epic);
-          fd.append('photo', photoFile);
+          if (croppedPhotoB64) {
+            fd.append('photo_b64', croppedPhotoB64);
+          } else {
+            fd.append('photo', photoFile);
+          }
 
           showTyping();
           const res = await fetch('/api/chat/generate-card', {
@@ -1808,51 +2077,47 @@
             setPlaceholder('Type anything to generate another card...');
             unlockInput();
 
-            const cardPageUrl  = '/card/' + epic;
-            const combinedUrl  = res.combined_url || res.card_url;
+            const cardPageUrl = '/card/' + epic;
+            const combinedUrl = res.combined_url || res.card_url;
             const downloadFileName = res.download_name || res.ptc_code || buildDownloadName();
             // Download URL — combined front+back image with fl_attachment
-            const dlCombined   = combinedUrl.indexOf('/upload/') !== -1
+            const dlCombined = combinedUrl.indexOf('/upload/') !== -1
               ? combinedUrl.replace('/upload/', '/upload/fl_attachment:' + downloadFileName + '/')
               : combinedUrl;
 
             let h = '\u{1F389} <strong>Your ID Card has been generated!</strong><br><br>';
 
-            // ── 3D flip card inline ──────────────────────────────
-            h += '<div class="chat-flip-scene">';
-            h += '  <div class="chat-flip-wrapper">';
-            h += '    <div class="chat-flip-inner" id="chatFlipInner">';
-            h += '      <div class="chat-flip-front">';
-            h += '        <img src="' + res.card_url + '" alt="ID Card Front">';
-            h += '      </div>';
-            h += '      <div class="chat-flip-back">';
-            h += '        <img src="/static/card_back.jpeg" alt="ID Card Back">';
-            h += '      </div>';
-            h += '    </div>';
+            // ── Enhanced Preview Tabs (from demo) ────────────────
+            const front = res.card_url;
+            const back = res.back_url || '/static/card_back.jpeg';
+            const combined = res.combined_url || res.card_url;
+
+            h += '<div class="chat-card-preview-area">';
+            h += '  <div class="chat-card-tabs">';
+            h += `    <button class="card-tab-btn active" onclick="switchBotTab(this,'front','${front}','${back}','${combined}')">Front</button>`;
+            h += `    <button class="card-tab-btn" onclick="switchBotTab(this,'back','${front}','${back}','${combined}')">Back</button>`;
+            h += `    <button class="card-tab-btn" onclick="switchBotTab(this,'combined','${front}','${back}','${combined}')">Combined</button>`;
             h += '  </div>';
-            h += '  <div style="text-align:center;margin-top:8px;">';
-            h += '    <button onclick="document.getElementById(\'chatFlipInner\').classList.toggle(\'flipped\')" '
-                +     'style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);'
-                +     'color:#fff;border-radius:20px;padding:6px 18px;font-size:0.82rem;font-weight:600;cursor:pointer;">'
-                +     '\u{1F501} Flip Card</button>';
+            h += '  <div style="border-radius:12px; overflow:hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">';
+            h += `    <img src="${front}" class="bot-card-img" style="width:100%; display:block; border-radius:12px;" alt="Card View">`;
             h += '  </div>';
             h += '</div>';
 
             // ── Action buttons ───────────────────────────────────
             h += '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">';
             h += '  <a href="' + cardPageUrl + '" target="_blank" '
-                +     'style="background:#1565c0;color:#fff;text-decoration:none;border-radius:10px;'
-                +     'padding:8px 16px;font-size:0.85rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;">'
-                +     '<i class="bi bi-fullscreen"></i> Full View</a>';
-            h += '  <a href="' + dlCombined + '" target="_blank" '
-                +     'style="background:#2e7d32;color:#fff;text-decoration:none;border-radius:10px;'
-                +     'padding:8px 16px;font-size:0.85rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;">'
-                +     '<i class="bi bi-download"></i> Download (Front + Back)</a>';
+              + 'style="background:#1565c0;color:#fff;text-decoration:none;border-radius:10px;'
+              + 'padding:8px 16px;font-size:0.85rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;">'
+              + '<i class="bi bi-fullscreen"></i> Full View</a>';
+            h += '  <a href="' + dlCombined + '" download="' + downloadFileName + '" onclick="handleDownload(event, this)" '
+              + 'style="background:#2e7d32;color:#fff;text-decoration:none;border-radius:10px;cursor:pointer;'
+              + 'padding:8px 16px;font-size:0.85rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;" class="download-btn">'
+              + '<i class="bi bi-download"></i> Download (Front + Back)</a>';
             h += '</div>';
             h += '<div style="margin-top:8px;font-size:0.82rem;color:#8a9ab5;">'
-                +  '<em>\u2139\uFE0F Download includes both front &amp; back in one image.</em></div>';
+              + '<em>\u2139\uFE0F Download includes both front &amp; back in one image.</em></div>';
             h += '<div style="margin-top:6px;font-size:0.82rem;color:#8a9ab5;">'
-                +  '<em>Type anything to generate a card for another member.</em></div>';
+              + '<em>Type anything to generate a card for another member.</em></div>';
 
             await botReply(h, 600);
 
@@ -1900,7 +2165,7 @@
         if (state !== S.AWAIT_EPIC) return;
         let val = this.value;
         let prefix = val.slice(0, 3).toUpperCase().replace(/[^A-Z]/g, '');
-        let rest   = val.slice(3).replace(/[^0-9]/g, '');
+        let rest = val.slice(3).replace(/[^0-9]/g, '');
         this.value = prefix + rest;
         if (prefix.length >= 3) {
           this.inputMode = 'numeric';

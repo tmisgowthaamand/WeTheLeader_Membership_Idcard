@@ -1,5 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,7 +16,11 @@
       --brand2: #2e7d32;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       min-height: 100vh;
@@ -28,28 +33,44 @@
     .site-navbar {
       background: rgba(13, 27, 42, 0.95);
       backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       padding: 0;
-      position: sticky; top: 0; z-index: 100;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
+
     .site-navbar .nav-link {
-      color: #ccc; font-weight: 600; font-size: 0.95rem;
-      padding: 14px 22px; transition: color 0.2s;
+      color: #ccc;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 14px 22px;
+      transition: color 0.2s;
     }
-    .site-navbar .nav-link:hover { color: #fff; }
+
+    .site-navbar .nav-link:hover {
+      color: #fff;
+    }
 
     /* ── Hero ── */
     .hero {
       text-align: center;
       padding: 2.5rem 1rem 1.5rem;
     }
+
     .hero h2 {
-      font-size: 1.6rem; font-weight: 800;
+      font-size: 1.6rem;
+      font-weight: 800;
       background: linear-gradient(90deg, #42a5f5, #66bb6a);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
       margin-bottom: 0.3rem;
     }
-    .hero p { color: #aaa; font-size: 0.92rem; }
+
+    .hero p {
+      color: #aaa;
+      font-size: 0.92rem;
+    }
 
     /* ── 3D Card Flip Container ── */
     .flip-scene {
@@ -64,34 +85,44 @@
       perspective: 1200px;
       width: 100%;
     }
+
     .flip-inner {
       position: relative;
       width: 100%;
-      padding-top: 66.67%;   /* 2/3 = 1024/1536 ratio */
+      padding-top: 66.67%;
+      /* 2/3 = 1024/1536 ratio */
       transition: transform 0.85s cubic-bezier(0.4, 0.2, 0.2, 1);
       transform-style: preserve-3d;
       cursor: pointer;
     }
+
     .flip-inner.flipped {
       transform: rotateY(180deg);
     }
 
-    .flip-front, .flip-back {
+    .flip-front,
+    .flip-back {
       position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       border-radius: 16px;
       overflow: hidden;
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 4px 20px rgba(0,0,0,0.3);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 4px 20px rgba(0, 0, 0, 0.3);
     }
-    .flip-front img, .flip-back img {
-      width: 100%; height: 100%;
+
+    .flip-front img,
+    .flip-back img {
+      width: 100%;
+      height: 100%;
       object-fit: cover;
       display: block;
       border-radius: 16px;
     }
+
     .flip-back {
       transform: rotateY(180deg);
     }
@@ -104,24 +135,39 @@
       color: #8a9ab5;
       animation: pulse-hint 2s ease-in-out infinite;
     }
+
     @keyframes pulse-hint {
-      0%, 100% { opacity: 0.6; }
-      50%       { opacity: 1.0; }
+
+      0%,
+      100% {
+        opacity: 0.6;
+      }
+
+      50% {
+        opacity: 1.0;
+      }
     }
 
     /* Flip button */
     .btn-flip {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: #fff; border-radius: 30px;
-      padding: 8px 22px; font-size: 0.88rem; font-weight: 600;
-      cursor: pointer; transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      border-radius: 30px;
+      padding: 8px 22px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
       backdrop-filter: blur(4px);
     }
+
     .btn-flip:hover {
-      background: rgba(255,255,255,0.15);
-      border-color: rgba(255,255,255,0.3);
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
       transform: translateY(-1px);
     }
 
@@ -136,7 +182,10 @@
       color: #7a8fa6;
       transition: color 0.3s;
     }
-    .side-label.back-active { color: #66bb6a; }
+
+    .side-label.back-active {
+      color: #66bb6a;
+    }
 
     /* ── Action buttons ── */
     .action-bar {
@@ -147,101 +196,178 @@
       padding: 0 16px;
       margin-bottom: 1.5rem;
     }
+
     .btn-action {
-      display: inline-flex; align-items: center; gap: 8px;
-      font-weight: 700; border: none; border-radius: 14px;
-      padding: 0.75rem 1.6rem; font-size: 0.95rem;
-      cursor: pointer; text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      border: none;
+      border-radius: 14px;
+      padding: 0.75rem 1.6rem;
+      font-size: 0.95rem;
+      cursor: pointer;
+      text-decoration: none;
       transition: transform 0.2s, box-shadow 0.2s;
     }
-    .btn-action:hover { transform: translateY(-2px); }
+
+    .btn-action:hover {
+      transform: translateY(-2px);
+    }
+
     .btn-dl {
       background: linear-gradient(135deg, #1565c0, #42a5f5);
       color: #fff;
-      box-shadow: 0 4px 16px rgba(21,101,192,0.4);
+      box-shadow: 0 4px 16px rgba(21, 101, 192, 0.4);
     }
-    .btn-dl:hover { box-shadow: 0 6px 22px rgba(21,101,192,0.55); color:#fff; }
+
+    .btn-dl:hover {
+      box-shadow: 0 6px 22px rgba(21, 101, 192, 0.55);
+      color: #fff;
+    }
+
     .btn-home {
-      background: rgba(255,255,255,0.08);
+      background: rgba(255, 255, 255, 0.08);
       color: #ddd;
-      border: 1px solid rgba(255,255,255,0.15);
+      border: 1px solid rgba(255, 255, 255, 0.15);
     }
-    .btn-home:hover { background: rgba(255,255,255,0.14); color:#fff; }
+
+    .btn-home:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+    }
 
     /* ── Voter info card ── */
     .info-card {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.10);
       border-radius: 16px;
       max-width: 600px;
       margin: 0 auto 1.5rem;
       overflow: hidden;
       backdrop-filter: blur(8px);
     }
+
     .info-card .info-row {
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       padding: 0.65rem 1.2rem;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
-    .info-card .info-row:last-child { border-bottom: none; }
+
+    .info-card .info-row:last-child {
+      border-bottom: none;
+    }
+
     .info-card .info-label {
-      font-size: 0.72rem; text-transform: uppercase;
-      letter-spacing: 0.8px; color: #7a8fa6; font-weight: 600;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #7a8fa6;
+      font-weight: 600;
     }
+
     .info-card .info-value {
-      font-size: 0.90rem; font-weight: 700; color: #e8edf2;
+      font-size: 0.90rem;
+      font-weight: 700;
+      color: #e8edf2;
     }
 
     /* ── Gen badge ── */
     .gen-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(255,179,0,0.12); color: #ffb300;
-      border: 1px solid rgba(255,179,0,0.2);
-      padding: 5px 14px; border-radius: 24px;
-      font-size: 0.80rem; font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 179, 0, 0.12);
+      color: #ffb300;
+      border: 1px solid rgba(255, 179, 0, 0.2);
+      padding: 5px 14px;
+      border-radius: 24px;
+      font-size: 0.80rem;
+      font-weight: 700;
       margin-bottom: 1rem;
     }
 
     /* ── Share ── */
     .share-row {
-      display: flex; gap: 10px; justify-content: center;
-      flex-wrap: wrap; padding: 0 16px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      padding: 0 16px;
       margin-bottom: 2rem;
     }
+
     .share-btn {
-      width: 44px; height: 44px; border-radius: 50%;
-      display: inline-flex; align-items: center; justify-content: center;
-      font-size: 1.15rem; color: #fff; border: none;
-      text-decoration: none; transition: transform 0.2s, box-shadow 0.2s;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      color: #fff;
+      border: none;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-    .share-btn:hover { transform: scale(1.12); color: #fff; }
-    .share-btn.wa  { background: #25D366; box-shadow: 0 4px 12px rgba(37,211,102,0.3); }
-    .share-btn.fb  { background: #1877F2; box-shadow: 0 4px 12px rgba(24,119,242,0.3); }
-    .share-btn.tw  { background: #1DA1F2; box-shadow: 0 4px 12px rgba(29,161,242,0.3); }
-    .share-btn.dl  { background: #546e7a; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+
+    .share-btn:hover {
+      transform: scale(1.12);
+      color: #fff;
+    }
+
+    .share-btn.wa {
+      background: #25D366;
+      box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+    }
+
+    .share-btn.fb {
+      background: #1877F2;
+      box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
+    }
+
+    .share-btn.tw {
+      background: #1DA1F2;
+      box-shadow: 0 4px 12px rgba(29, 161, 242, 0.3);
+    }
+
+    .share-btn.dl {
+      background: #546e7a;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
 
     /* ── Footer ── */
     .pg-footer {
-      text-align: center; padding: 1rem;
-      font-size: 0.78rem; color: #4a5a6e;
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.78rem;
+      color: #4a5a6e;
     }
 
     @media (max-width: 576px) {
-      .hero h2 { font-size: 1.3rem; }
-      .btn-action { padding: 0.65rem 1.2rem; font-size: 0.88rem; }
+      .hero h2 {
+        font-size: 1.3rem;
+      }
+
+      .btn-action {
+        padding: 0.65rem 1.2rem;
+        font-size: 0.88rem;
+      }
     }
   </style>
 </head>
+
 <body>
 
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg site-navbar">
     <div class="container">
       <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('user_home') }}">
-        <img src="/static/newfavicon.png" alt="Logo"
-             style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
+        <img src="/static/newfavicon.png" alt="Logo" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
         <img src="{{ url_for('static', filename='new-name-logo.png') }}" alt="We The Leaders"
-             style="height:30px;width:auto;">
+          style="height:30px;width:auto;">
       </a>
       <div class="ms-auto">
         <a href="{{ url_for('user_home') }}" class="nav-link">
@@ -309,9 +435,11 @@
   </div>
 
   <!-- Action buttons -->
-  {% set dl_combined = combined_url.replace('/upload/', '/upload/fl_attachment:' ~ download_name ~ '/') if '/upload/' in combined_url else combined_url %}
+  {% set dl_combined = combined_url.replace('/upload/', '/upload/fl_attachment:' ~ download_name ~ '/') if '/upload/' in
+  combined_url else combined_url %}
   <div class="action-bar">
-    <a href="{{ dl_combined }}" class="btn-action btn-dl" target="_blank">
+    <a href="{{ dl_combined }}" class="btn-action btn-dl" download="{{ download_name }}.jpg"
+      onclick="handleDownload(event, this)">
       <i class="bi bi-download"></i> Download (Front + Back)
     </a>
     <a href="{{ url_for('user_home') }}" class="btn-action btn-home">
@@ -345,10 +473,14 @@
 
   <!-- Share -->
   <div class="share-row">
-    <a href="https://wa.me/?text=I%20just%20got%20my%20We%20The%20Leaders%20Member%20ID%20Card!" target="_blank" class="share-btn wa" title="Share on WhatsApp"><i class="bi bi-whatsapp"></i></a>
-    <a href="https://www.facebook.com/sharer/sharer.php" target="_blank" class="share-btn fb" title="Share on Facebook"><i class="bi bi-facebook"></i></a>
-    <a href="https://twitter.com/intent/tweet?text=I%20just%20got%20my%20We%20The%20Leaders%20Member%20ID%20Card!" target="_blank" class="share-btn tw" title="Share on Twitter"><i class="bi bi-twitter-x"></i></a>
-    <a href="{{ dl_combined }}" class="share-btn dl" title="Download" target="_blank"><i class="bi bi-download"></i></a>
+    <a href="https://wa.me/?text=I%20just%20got%20my%20We%20The%20Leaders%20Member%20ID%20Card!" target="_blank"
+      class="share-btn wa" title="Share on WhatsApp"><i class="bi bi-whatsapp"></i></a>
+    <a href="https://www.facebook.com/sharer/sharer.php" target="_blank" class="share-btn fb"
+      title="Share on Facebook"><i class="bi bi-facebook"></i></a>
+    <a href="https://twitter.com/intent/tweet?text=I%20just%20got%20my%20We%20The%20Leaders%20Member%20ID%20Card!"
+      target="_blank" class="share-btn tw" title="Share on Twitter"><i class="bi bi-twitter-x"></i></a>
+    <a href="{{ dl_combined }}" class="share-btn dl" title="Download" download="{{ download_name }}.jpg"
+      onclick="handleDownload(event, this)"><i class="bi bi-download"></i></a>
   </div>
 
   <!-- Footer -->
@@ -362,9 +494,9 @@
 
     function flipCard() {
       isFlipped = !isFlipped;
-      const inner    = document.getElementById('flipInner');
-      const label    = document.getElementById('sideLabel');
-      const btnText  = document.getElementById('flipBtnText');
+      const inner = document.getElementById('flipInner');
+      const label = document.getElementById('sideLabel');
+      const btnText = document.getElementById('flipBtnText');
 
       if (isFlipped) {
         inner.classList.add('flipped');
@@ -376,6 +508,30 @@
         label.textContent = 'FRONT SIDE';
         label.classList.remove('back-active');
         btnText.textContent = 'Show Back';
+      }
+    }
+
+    // Helper to handle data URL download without top-frame navigation error
+    function handleDownload(e, btn) {
+      const url = btn.href;
+      if (url.startsWith('data:')) {
+        e.preventDefault();
+        const name = btn.getAttribute('download') || 'card.jpg';
+        const parts = url.split(',');
+        const mime = parts[0].match(/:(.*?);/)[1];
+        const bstr = atob(parts[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) u8arr[n] = bstr.charCodeAt(n);
+        const blob = new Blob([u8arr], { type: mime });
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
       }
     }
 
@@ -394,4 +550,5 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

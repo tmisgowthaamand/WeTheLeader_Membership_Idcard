@@ -574,6 +574,7 @@ def demo_generate():
 
 
 @app.route('/')
+@app.route('/chatbot.html')
 def user_home():
     resp = app.make_response(render_template('user/chatbot.html'))
     resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
@@ -582,6 +583,35 @@ def user_home():
 # ══════════════════════════════════════════════════════════════════
 #  CHATBOT API ENDPOINTS
 # ══════════════════════════════════════════════════════════════════
+
+@app.route('/api/chat/validate-epic', methods=['POST'])
+@rate_limit(max_requests=20, window_seconds=60)
+def chat_validate_epic():
+    """Validate an EPIC number and return voter details."""
+    data    = request.get_json(silent=True) or {}
+    epic_no = data.get('epic_no', '').strip().upper()
+    valid, result = validate_epic(epic_no)
+    if not valid:
+        return jsonify({'success': False, 'message': result}), 400
+    epic_no = result
+    voter = find_voter_by_epic(epic_no)
+    if not voter:
+        return jsonify({'success': False, 'message': 'EPIC Number not found in our records. Please check and try again.'}), 404
+    return jsonify({'success': True, 'voter': voter})
+
+
+@app.route('/demo/lookup', methods=['POST'])
+@rate_limit(max_requests=30, window_seconds=60)
+def demo_lookup():
+    """Look up a voter by EPIC from the real DB — used by demo.html."""
+    data    = request.get_json(silent=True) or {}
+    epic_no = data.get('epic_no', '').strip().upper()
+    if not epic_no:
+        return jsonify({'success': False, 'message': 'EPIC Number is required.'}), 400
+    voter = find_voter_by_epic(epic_no)
+    if not voter:
+        return jsonify({'success': False, 'message': 'EPIC Number not found. Using manual entry mode.'}), 404
+    return jsonify({'success': True, 'voter': voter})
 
 @app.route('/api/chat/send-otp', methods=['POST'])
 @limiter.limit("3 per 5 minutes")
@@ -884,20 +914,6 @@ def chat_set_pin():
     return jsonify({'success': True})
 
 
-@app.route('/api/chat/validate-epic', methods=['POST'])
-@rate_limit(max_requests=10, window_seconds=60)
-def chat_validate_epic():
-    data    = request.get_json()
-    epic_no = data.get('epic_no', '').strip().upper()
-    valid, result = validate_epic(epic_no)
-    if not valid:
-        return jsonify({'success': False, 'message': result}), 400
-    voter = find_voter_by_epic(result)
-    if not voter:
-        return jsonify({'success': False, 'message': 'EPIC Number not found. Please check and try again.'}), 404
-    display = {k: str(v) if v else '' for k, v in voter.items() if not k.startswith('_')}
-    return jsonify({'success': True, 'voter': display})
-
 
 @app.route('/api/chat/generate-card', methods=['POST'])
 @limiter.limit("5 per 5 minutes")
@@ -919,17 +935,23 @@ def chat_generate_card():
         return jsonify({'success': False, 'message': 'EPIC Number not found.'}), 404
 
     # ── Photo is required ─────────────────────────────────────────
-    if 'photo' not in request.files or not request.files['photo'].filename:
+    photo_stream = None
+    if 'photo' in request.files and request.files['photo'].filename:
+        photo_stream = request.files['photo'].stream
+    elif request.form.get('photo_b64'):
+        try:
+            import base64
+            b64data = request.form['photo_b64']
+            if ',' in b64data: b64data = b64data.split(',', 1)[1]
+            photo_stream = io.BytesIO(base64.b64decode(b64data))
+        except Exception:
+            return jsonify({'success': False, 'message': 'Invalid photo data.'}), 400
+    else:
         return jsonify({'success': False, 'message': 'Please upload your passport photo.'}), 400
-
-    file = request.files['photo']
-    valid_file, file_error = validate_file_upload(file, ALLOWED_IMG, max_size_mb=10)
-    if not valid_file:
-        return jsonify({'success': False, 'message': file_error}), 400
 
     try:
         # ── Validate face in photo ────────────────────────────────
-        is_valid, face_msg, photo_image = validate_photo_for_id_card(file.stream)
+        is_valid, face_msg, photo_image = validate_photo_for_id_card(photo_stream)
         if not is_valid:
             return jsonify({
                 'success': False,
@@ -966,33 +988,59 @@ def chat_generate_card():
         card_image.save(card_buf, format='JPEG', quality=config.JPEG_QUALITY,
                         dpi=(config.CARD_DPI, config.CARD_DPI))
         card_buf.seek(0)
-        card_up  = cloudinary.uploader.upload(
-            card_buf.getvalue(),
-            folder='generated_cards', public_id=epic_no,
-            overwrite=True, resource_type='image'
-        )
-        card_url = card_up['secure_url']
-        logger.info("Card generated for %s: %s", epic_no, card_url)
+
+        card_url = ""
+        try:
+            if config.CLOUDINARY_API_KEY:
+                card_up = cloudinary.uploader.upload(
+                    card_buf.getvalue(),
+                    folder='generated_cards', public_id=epic_no,
+                    overwrite=True, resource_type='image'
+                )
+                card_url = card_up['secure_url']
+                logger.info("Card generated for %s: %s", epic_no, card_url)
+            else:
+                # Fallback to base64
+                import base64
+                card_url = "data:image/jpeg;base64," + base64.b64encode(card_buf.getvalue()).decode()
+                logger.info("Cloudinary not configured, returning Base64 for %s", epic_no)
+        except Exception as e:
+            logger.warning("Cloudinary upload failed for %s: %s. Using Base64 fallback.", epic_no, e)
+            import base64
+            card_url = "data:image/jpeg;base64," + base64.b64encode(card_buf.getvalue()).decode()
 
         # ── Create combined front+back download image ─────────────
-        combined_url = card_url  # fallback to front only
+        combined_url = card_url
+        back_url = ""
         try:
-            back_img     = generate_back_card(voter)
-            combined     = generate_combined_card(card_image, back_img)
+            back_img = generate_back_card(voter)
+            back_buf = io.BytesIO()
+            back_img.save(back_buf, format='JPEG', quality=config.JPEG_QUALITY)
+            back_buf.seek(0)
+            
+            if config.CLOUDINARY_API_KEY:
+                # Upload back
+                back_up = cloudinary.uploader.upload(back_buf.getvalue(), folder='generated_cards', public_id=f"{epic_no}_back", overwrite=True)
+                back_url = back_up['secure_url']
+            else:
+                import base64
+                back_url = "data:image/jpeg;base64," + base64.b64encode(back_buf.getvalue()).decode()
+
+            combined = generate_combined_card(card_image, back_img)
             comb_buf = io.BytesIO()
-            combined.save(comb_buf, format='JPEG', quality=config.JPEG_QUALITY,
-                          dpi=(config.CARD_DPI, config.CARD_DPI))
+            combined.save(comb_buf, format='JPEG', quality=config.JPEG_QUALITY, dpi=(config.CARD_DPI, config.CARD_DPI))
             comb_buf.seek(0)
-            comb_up = cloudinary.uploader.upload(
-                comb_buf.getvalue(),
-                folder='generated_cards',
-                public_id=f"{epic_no}_combined",
-                overwrite=True, resource_type='image'
-            )
-            combined_url = comb_up['secure_url']
-            logger.info("Combined card uploaded for %s", epic_no)
+            
+            if config.CLOUDINARY_API_KEY:
+                comb_up = cloudinary.uploader.upload(comb_buf.getvalue(), folder='generated_cards', public_id=f"{epic_no}_combined", overwrite=True)
+                combined_url = comb_up['secure_url']
+            else:
+                import base64
+                combined_url = "data:image/jpeg;base64," + base64.b64encode(comb_buf.getvalue()).decode()
+            
+            logger.info("Combined/Back ready for %s", epic_no)
         except Exception as ce:
-            logger.warning("Combined card creation failed for %s: %s", epic_no, ce)
+            logger.warning("Back/Combined generation/upload failed for %s: %s", epic_no, ce)
 
         now = datetime.now(timezone.utc)
         db  = _get_db()
@@ -1027,6 +1075,7 @@ def chat_generate_card():
         return jsonify({
             'success':      True,
             'card_url':     card_url,
+            'back_url':     back_url,
             'combined_url': combined_url,
             'download_name': generate_download_name(ptc_code),
             'ptc_code':      ptc_code,

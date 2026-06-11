@@ -714,15 +714,13 @@
     (function () {
       var rm = document.getElementById('rememberMe');
       var uInput = document.getElementById('username');
-      var pInput = document.getElementById('password');
 
-      // Load saved credentials on page load
+      // Load saved username on page load
       var saved = localStorage.getItem('adminRemember');
       if (saved) {
         try {
           var creds = JSON.parse(saved);
           uInput.value = creds.u || '';
-          pInput.value = creds.p || '';
           rm.checked = true;
         } catch (e) { }
       }
@@ -731,8 +729,8 @@
       document.getElementById('loginForm').addEventListener('submit', function () {
         if (rm.checked) {
           localStorage.setItem('adminRemember', JSON.stringify({
-            u: uInput.value,
-            p: pInput.value
+            u: uInput.value
+            // SECURITY: Never store passwords in localStorage
           }));
         } else {
           localStorage.removeItem('adminRemember');

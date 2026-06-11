@@ -14,4 +14,4 @@ flask-limiter==3.5.0
 pybreaker==1.0.2
 flask-session==0.6.0
 cachelib==0.10.2
-opencv-python==4.10.0.84
+opencv-python-headless==4.10.0.84

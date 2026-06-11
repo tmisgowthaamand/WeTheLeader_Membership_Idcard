@@ -390,8 +390,8 @@
   <div class="container py-4">
     <div class="info-note">
       <i class="bi bi-info-circle-fill me-1"></i>
-      <strong>Test Mode</strong> -- No database or Cloudinary needed. Cards generated live.
-      Fill the form and click <strong>Generate Card</strong>.
+      <strong>Test Mode</strong> -- Connected to MongoDB for real voter lookup (11,000+ records).
+      Enter EPIC and click <strong>Lookup</strong> or fill manually.
     </div>
 
     <div class="row g-4">
@@ -409,9 +409,14 @@
                 placeholder="e.g. RAJESH KUMAR" maxlength="80">
             </div>
             <div class="mb-3">
-              <label class="form-label">EPIC No</label>
-              <input type="text" class="form-control" name="epic_no" value="KFD3622586" placeholder="e.g. KFD3622586"
-                maxlength="20">
+              <label class="form-label">EPIC Number <span class="text-muted fw-normal">(Search DB)</span></label>
+              <div class="input-group">
+                <input type="text" class="form-control" name="epic_no" id="epicInput" value="KFD3622586"
+                  placeholder="e.g. KFD3622586" maxlength="20">
+                <button class="btn btn-outline-success" type="button" id="lookupBtn">
+                  <i class="bi bi-search"></i> Lookup
+                </button>
+              </div>
             </div>
             <div class="mb-3">
               <label class="form-label">Assembly Constituency</label>
@@ -485,7 +490,8 @@
           <div class="ptc-badge" id="ptcBadge"><i class="bi bi-qr-code me-1"></i> WTL Code: <span
               id="ptcCodeVal"></span></div>
           <div class="action-row" id="actionRow" style="display:none">
-            <a href="#" class="btn-dl" id="dlBtn" download="WTL-CARD.jpg"><i class="bi bi-download"></i>
+            <a href="#" class="btn-dl" id="dlBtn" download="WTL-CARD.jpg" onclick="handleDownload(event, this)"><i
+                class="bi bi-download"></i>
               Download</a>
             <button class="btn-share" onclick="shareCard()"><i class="bi bi-share"></i> Share</button>
             <button class="btn-share"
@@ -549,7 +555,7 @@
 
     function fillProfile(name, epic, assembly, district) {
       document.querySelector('[name=name]').value = name;
-      document.querySelector('[name=epic_no]').value = epic;
+      document.getElementById('epicInput').value = epic;
       document.querySelector('[name=assembly]').value = assembly;
       document.querySelector('[name=district]').value = district;
       document.getElementById('demoPtcCode').value = '';
@@ -568,11 +574,13 @@
         img.onload = () => {
           const sw = img.width, sh = img.height;
           let cropW, cropH, cropX, cropY;
-          if (sw / sh > 356 / 542) {
-            cropH = sh; cropW = Math.floor(sh * 356 / 542);
+          // Target ratio 356/542 (same as backend photo scale and frame)
+          const targetRatio = 356 / 542;
+          if (sw / sh > targetRatio) {
+            cropH = sh; cropW = Math.floor(sh * targetRatio);
             cropX = Math.floor((sw - cropW) / 2); cropY = 0;
           } else {
-            cropW = sw; cropH = Math.floor(sw * 542 / 356);
+            cropW = sw; cropH = Math.floor(sw / targetRatio);
             cropX = 0;
             cropY = Math.floor((sh - cropH) * 0.15);
             cropY = Math.max(0, Math.min(cropY, sh - cropH));
@@ -607,6 +615,30 @@
       document.getElementById('cardImg').src = src;
       document.getElementById('dlBtn').href = src;
       document.getElementById('dlBtn').download = buildDownloadName();
+    }
+
+    // Helper to handle data URL download without top-frame navigation error
+    function handleDownload(e, btn) {
+      const url = btn.href;
+      if (url.startsWith('data:')) {
+        e.preventDefault();
+        const name = btn.getAttribute('download') || 'card.jpg';
+        const parts = url.split(',');
+        const mime = parts[0].match(/:(.*?);/)[1];
+        const bstr = atob(parts[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) u8arr[n] = bstr.charCodeAt(n);
+        const blob = new Blob([u8arr], { type: mime });
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      }
     }
 
     function fetchSide(side) {
@@ -662,6 +694,54 @@
         alert('Use the Download button to save the card.');
       }
     }
+
+    // --- Real DB Lookup for Demo ---
+    document.getElementById('lookupBtn')?.addEventListener('click', async function () {
+      const epicInput = document.getElementById('epicInput');
+      const epic = epicInput.value.trim().toUpperCase();
+      if (!epic) return alert('Enter EPIC number');
+
+      this.disabled = true;
+      const oldHtml = this.innerHTML;
+      this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+      try {
+        const res = await fetch('/demo/lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ epic_no: epic })
+        });
+        const data = await res.json();
+
+        if (data.success && data.voter) {
+          const v = data.voter;
+          const name = ((v.FM_NAME_EN || v.name || '') + ' ' + (v.LASTNAME_EN || '')).trim() || v.name || '';
+          document.querySelector('[name=name]').value = name;
+          document.querySelector('[name=assembly]').value = v.ASSEMBLY_NAME || v.assembly_name || v.assembly || '';
+          document.querySelector('[name=district]').value = v.DISTRICT_NAME || v.district_name || v.district || '';
+          cachedImages = {};
+
+          // Flash success
+          epicInput.classList.add('is-valid');
+          setTimeout(() => epicInput.classList.remove('is-valid'), 2000);
+        } else {
+          alert('EPIC not found in database. You can still enter details manually.');
+        }
+      } catch (e) {
+        alert('Lookup failed.');
+      } finally {
+        this.disabled = false;
+        this.innerHTML = oldHtml;
+      }
+    });
+
+    // Handle Enter key on EPIC input
+    document.getElementById('epicInput')?.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('lookupBtn').click();
+      }
+    });
   </script>
 </body>
 
