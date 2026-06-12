@@ -19,6 +19,11 @@ DATA_DIR           = os.path.join(BASE_DIR, 'data')
 UPLOADS_DIR        = os.path.join(BASE_DIR, 'uploads')
 
 # ── MongoDB ───────────────────────────────────────────────────────
+# DB1: DigitalOcean — Voter Roll (READ-ONLY, 5.8cr records, ass_<N> collections)
+MONGO_VOTER_URL     = os.getenv("MONGO_VOTER_URL", "")
+MONGO_VOTER_DB_NAME = os.getenv("MONGO_VOTER_DB_NAME", "voter_db")
+
+# DB2: Atlas — App data (generated cards, users, OTP, sessions)
 MONGO_URI   = os.getenv("MONGO_URI", "")
 MONGO_DB    = os.getenv("MONGO_DB", "wetheleaders")
 

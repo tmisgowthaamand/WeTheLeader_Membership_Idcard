@@ -1,7 +1,11 @@
 ﻿"""
-We The Leaders — Voter ID Card Generator v5.0
+We The Leaders — Voter ID Card Generator v6.0
 ==============================================
-Database : MongoDB Atlas (all collections)
+DB1 : DigitalOcean MongoDB — Voter Roll (READ-ONLY)
+      5.8 crore records across ass_<N> collections
+      Schema: ID, ASSEMBLY_NO, ASSEMBLY_NAME, VOTER_NAME,
+              DISTRICT, GENDER, EPIC_NO, MOBILE_NUMBER
+DB2 : MongoDB Atlas — App data (generated cards, users, OTP, sessions)
 Photos   : Cloudinary
 Cards    : Cloudinary
 """
@@ -127,38 +131,59 @@ def to_ist(dt_str):
         return str(dt_str)[:19].replace('T', ' ') if dt_str else '-'
 
 # ══════════════════════════════════════════════════════════════════
-#  MONGODB SETUP
+#  MONGODB SETUP — TWO DATABASES
+#  DB1: DigitalOcean voter_db  — READ-ONLY voter roll
+#  DB2: Atlas wetheleaders     — app data (write)
 # ══════════════════════════════════════════════════════════════════
-_mongo_client: MongoClient | None = None
+_voter_client: MongoClient | None = None   # DB1 — DigitalOcean
+_app_client:   MongoClient | None = None   # DB2 — Atlas
+
+
+def _get_voter_db():
+    """DB1: DigitalOcean voter roll — READ-ONLY. ass_<N> collections."""
+    global _voter_client
+    if _voter_client is None:
+        _voter_client = MongoClient(
+            config.MONGO_VOTER_URL,
+            serverSelectionTimeoutMS=15000,
+            maxPoolSize=5,
+            minPoolSize=1,
+        )
+        logger.info("DigitalOcean voter_db connected: %s", config.MONGO_VOTER_DB_NAME)
+    return _voter_client[config.MONGO_VOTER_DB_NAME]
+
 
 def _get_db():
-    global _mongo_client
-    if _mongo_client is None:
-        _mongo_client = MongoClient(config.MONGO_URI, serverSelectionTimeoutMS=10000,
-                                    maxPoolSize=10, minPoolSize=1)
-        logger.info("MongoDB Atlas connected: %s", config.MONGO_DB)
-    return _mongo_client[config.MONGO_DB]
+    """DB2: Atlas app data — generated_voters, otp_sessions, etc."""
+    global _app_client
+    if _app_client is None:
+        _app_client = MongoClient(
+            config.MONGO_URI,
+            serverSelectionTimeoutMS=10000,
+            maxPoolSize=10,
+            minPoolSize=1,
+        )
+        logger.info("Atlas app DB connected: %s", config.MONGO_DB)
+    return _app_client[config.MONGO_DB]
+
 
 def _ensure_mongo_indexes():
+    """Create indexes on DB2 (Atlas) app collections only."""
     try:
         db = _get_db()
-        db.voters.create_index([("EPIC_NO", ASCENDING)], unique=True, background=True)
-        db.voters.create_index([("ASSEMBLY_NAME", ASCENDING)], background=True)
-        db.voters.create_index([("DISTRICT_NAME", ASCENDING)], background=True)
-        db.voters.create_index([("FM_NAME_EN", ASCENDING)], background=True)
-        db.voters.create_index([("VOTER_NAME", ASCENDING)], background=True)
-        db.voters.create_index([("MOBILE_NO", ASCENDING)], background=True)
-        db.generated_voters.create_index([("EPIC_NO", ASCENDING)], unique=True, background=True)
-        db.generated_voters.create_index([("MOBILE_NO", ASCENDING)], background=True)
-        db.generated_voters.create_index([("ptc_code", ASCENDING)], unique=True, sparse=True, background=True)
-        db.generated_voters.create_index([("referred_by_ptc", ASCENDING)], background=True)
-        db.generation_stats.create_index([("epic_no", ASCENDING)], unique=True, background=True)
-        db.generation_stats.create_index([("auth_mobile", ASCENDING)], background=True)
-        db.otp_sessions.create_index([("mobile", ASCENDING)], unique=True, background=True)
-        db.otp_sessions.create_index([("created_at", ASCENDING)], expireAfterSeconds=600, background=True)
-        db.volunteer_requests.create_index([("ptc_code", ASCENDING)], background=True)
-        db.booth_agent_requests.create_index([("ptc_code", ASCENDING)], background=True)
-        logger.info("MongoDB indexes ensured.")
+        db.generated_voters.create_index([("EPIC_NO", ASCENDING)],   unique=True,  background=True)
+        db.generated_voters.create_index([("MOBILE_NO", ASCENDING)],               background=True)
+        db.generated_voters.create_index([("ptc_code", ASCENDING)],  unique=True,  sparse=True, background=True)
+        db.generated_voters.create_index([("referred_by_ptc", ASCENDING)],         background=True)
+        db.generated_voters.create_index([("ASSEMBLY_NAME", ASCENDING)],           background=True)
+        db.generated_voters.create_index([("DISTRICT", ASCENDING)],                background=True)
+        db.generation_stats.create_index([("epic_no", ASCENDING)],   unique=True,  background=True)
+        db.generation_stats.create_index([("auth_mobile", ASCENDING)],             background=True)
+        db.otp_sessions.create_index([("mobile", ASCENDING)],        unique=True,  background=True)
+        db.otp_sessions.create_index([("created_at", ASCENDING)],    expireAfterSeconds=600, background=True)
+        db.volunteer_requests.create_index([("ptc_code", ASCENDING)],              background=True)
+        db.booth_agent_requests.create_index([("ptc_code", ASCENDING)],            background=True)
+        logger.info("Atlas indexes ensured.")
     except Exception as e:
         logger.warning("Index setup warning: %s", e)
 
@@ -193,46 +218,66 @@ def _cache_set(key, value, ttl=60):
 # ══════════════════════════════════════════════════════════════════
 
 def _doc_to_voter(doc: dict) -> dict | None:
+    """
+    Normalise a voter document from either DB1 (DigitalOcean) or DB2 (Atlas)
+    into a consistent dict used throughout the app.
+
+    DB1 schema: ID, ASSEMBLY_NO, ASSEMBLY_NAME, VOTER_NAME,
+                DISTRICT, GENDER, EPIC_NO, MOBILE_NUMBER
+    DB2 schema: may also have FM_NAME_EN, RELATION_NAME, PART_NO, etc.
+    """
     if not doc:
         return None
+
+    # Name — DB1 uses VOTER_NAME only; DB2 may have FM_NAME_EN
     voter_name = ((doc.get('FM_NAME_EN') or '') + ' ' + (doc.get('LASTNAME_EN') or '')).strip()
     if not voter_name:
         voter_name = doc.get('VOTER_NAME', '')
+
+    # Relation name
     rel_name = ((doc.get('RLN_FM_NM_EN') or '') + ' ' + (doc.get('RLN_L_NM_EN') or '')).strip()
     if not rel_name:
         rel_name = doc.get('RELATION_NAME', '')
+
     rel_name_v1 = ((doc.get('RLN_FM_NM_V1') or '') + ' ' + (doc.get('RLN_L_NM_V1') or '')).strip()
-    name_v1 = ((doc.get('FM_NAME_V1') or '') + ' ' + (doc.get('LASTNAME_V1') or '')).strip()
+    name_v1     = ((doc.get('FM_NAME_V1')   or '') + ' ' + (doc.get('LASTNAME_V1')   or '')).strip()
+
+    # District — DB1 uses DISTRICT; DB2 uses DISTRICT_NAME
+    district = doc.get('DISTRICT_NAME') or doc.get('DISTRICT', '')
+
+    # Mobile — DB1 uses MOBILE_NUMBER; DB2 uses MOBILE_NO
+    mobile = doc.get('MOBILE_NO') or doc.get('MOBILE_NUMBER') or ''
+
     return {
-        'epic_no':        doc.get('EPIC_NO', ''),
-        'name':           voter_name,
-        'assembly':       str(doc.get('AC_NO') or doc.get('ASSEMBLY_NO') or ''),
-        'assembly_name':  doc.get('ASSEMBLY_NAME', ''),
-        'district':       doc.get('DISTRICT_NAME') or doc.get('DISTRICT', ''),
-        'age':            doc.get('AGE', ''),
-        'sex':            doc.get('GENDER', ''),
-        'relation_type':  doc.get('RLN_TYPE', ''),
-        'relation_name':  rel_name,
+        'epic_no':          doc.get('EPIC_NO', ''),
+        'name':             voter_name,
+        'assembly':         str(doc.get('AC_NO') or doc.get('ASSEMBLY_NO') or ''),
+        'assembly_name':    doc.get('ASSEMBLY_NAME', ''),
+        'district':         district,
+        'age':              doc.get('AGE', ''),
+        'sex':              doc.get('GENDER', ''),
+        'relation_type':    doc.get('RLN_TYPE', ''),
+        'relation_name':    rel_name,
         'relation_name_v1': rel_name_v1,
-        'mobile':         doc.get('MOBILE_NO') or doc.get('MOBILE_NUMBER', ''),
-        'part_no':        str(doc.get('PART_NO') or ''),
-        'section_no':     str(doc.get('SECTION_NO') or ''),
-        'slno_in_part':   str(doc.get('SLNOINPART') or ''),
-        'house_no':       doc.get('C_HOUSE_NO') or doc.get('HOUSE_NO', ''),
-        'house_no_v1':    doc.get('C_HOUSE_NO_V1', ''),
-        'dob':            doc.get('DOB', ''),
-        'name_v1':        name_v1,
-        'org_list_no':    str(doc.get('ORG_LIST_NO') or ''),
-        'district_id':    doc.get('DISTRICT_ID', ''),
-        'id':             str(doc.get('_id', '')),
+        'mobile':           mobile,
+        'part_no':          str(doc.get('PART_NO') or ''),
+        'section_no':       str(doc.get('SECTION_NO') or ''),
+        'slno_in_part':     str(doc.get('SLNOINPART') or ''),
+        'house_no':         doc.get('C_HOUSE_NO') or doc.get('HOUSE_NO', ''),
+        'house_no_v1':      doc.get('C_HOUSE_NO_V1', ''),
+        'dob':              doc.get('DOB', ''),
+        'name_v1':          name_v1,
+        'org_list_no':      str(doc.get('ORG_LIST_NO') or ''),
+        'district_id':      doc.get('DISTRICT_ID', ''),
+        'id':               str(doc.get('_id', '')),
         # Raw uppercase keys for card generation
-        'FM_NAME_EN':    doc.get('FM_NAME_EN', ''),
+        'FM_NAME_EN':    voter_name,
         'LASTNAME_EN':   doc.get('LASTNAME_EN', ''),
         'FM_NAME_V1':    doc.get('FM_NAME_V1', ''),
         'LASTNAME_V1':   doc.get('LASTNAME_V1', ''),
         'AC_NO':         doc.get('AC_NO') or doc.get('ASSEMBLY_NO', ''),
         'ASSEMBLY_NAME': doc.get('ASSEMBLY_NAME', ''),
-        'DISTRICT_NAME': doc.get('DISTRICT_NAME') or doc.get('DISTRICT', ''),
+        'DISTRICT_NAME': district,
         'PART_NO':       doc.get('PART_NO'),
         'SECTION_NO':    doc.get('SECTION_NO'),
         'SLNOINPART':    doc.get('SLNOINPART'),
@@ -247,7 +292,7 @@ def _doc_to_voter(doc: dict) -> dict | None:
         'GENDER':        doc.get('GENDER', ''),
         'AGE':           doc.get('AGE', ''),
         'DOB':           doc.get('DOB', ''),
-        'MOBILE_NO':     doc.get('MOBILE_NO') or doc.get('MOBILE_NUMBER', ''),
+        'MOBILE_NO':     mobile,
         'ORG_LIST_NO':   doc.get('ORG_LIST_NO', ''),
     }
 
@@ -277,21 +322,59 @@ def _gen_doc_to_dict(doc: dict) -> dict | None:
 
 
 def find_voter_by_epic(epic_no: str) -> dict | None:
+    """
+    Search DB1 (DigitalOcean voter_db) for a voter by EPIC number.
+    DB1 has 233 ass_<N> collections each with an EPIC_NO index.
+    Strategy: search all collections — EPIC_NO index makes each query fast.
+    Result is cached 10 minutes.
+    """
     epic_no = epic_no.strip().upper()
     if not epic_no:
         return None
+
     cache_key = f'wtl:epic:{epic_no}'
     cached = _cache_get(cache_key)
     if cached:
         return cached if cached.get('epic_no') else None
-    db  = _get_db()
-    doc = db.voters.find_one({"EPIC_NO": epic_no})
-    if doc:
-        result = _doc_to_voter(doc)
-        _cache_set(cache_key, result, 600)
-        return result
+
+    try:
+        voter_db = _get_voter_db()
+        col_names = voter_db.list_collection_names()   # cached by driver
+        for col_name in col_names:
+            doc = voter_db[col_name].find_one({"EPIC_NO": epic_no})
+            if doc:
+                result = _doc_to_voter(doc)
+                _cache_set(cache_key, result, 600)
+                return result
+    except Exception as e:
+        logger.error("Voter DB lookup error: %s", e)
+
+    # Not found — cache negative result for 2 min to avoid hammering DB
     _cache_set(cache_key, {'epic_no': ''}, 120)
     return None
+
+
+def find_voters_by_mobile(mobile: str) -> list[dict]:
+    """
+    Search DB1 for voters by mobile number across all ass_<N> collections.
+    Returns list of matching voter dicts.
+    """
+    mobile = mobile.strip()
+    if not mobile:
+        return []
+    results = []
+    try:
+        voter_db = _get_voter_db()
+        for col_name in voter_db.list_collection_names():
+            for doc in voter_db[col_name].find({"MOBILE_NUMBER": mobile}, limit=5):
+                v = _doc_to_voter(doc)
+                if v:
+                    results.append(v)
+            if results:
+                break
+    except Exception as e:
+        logger.error("Voter DB mobile lookup error: %s", e)
+    return results
 
 
 def generate_ptc_code() -> str:
@@ -359,10 +442,30 @@ def _get_cached_dropdowns(source: str, cache_key: str):
     cached = _cache_get(cache_key)
     if cached:
         return cached.get('assemblies', []), cached.get('districts', [])
-    db = _get_db()
-    col = db.voters if source == 'voters' else db.generated_voters
-    assemblies = sorted([v for v in col.distinct("ASSEMBLY_NAME") if v])
-    districts  = sorted([v for v in col.distinct("DISTRICT_NAME") if v])
+
+    if source == 'voters':
+        # DB1: collect distinct values from all ass_<N> collections
+        try:
+            voter_db = _get_voter_db()
+            assembly_set = set()
+            district_set = set()
+            for col_name in voter_db.list_collection_names():
+                col = voter_db[col_name]
+                for v in col.distinct("ASSEMBLY_NAME"):
+                    if v: assembly_set.add(v)
+                for v in col.distinct("DISTRICT"):
+                    if v: district_set.add(v)
+            assemblies = sorted(assembly_set)
+            districts  = sorted(district_set)
+        except Exception:
+            assemblies, districts = [], []
+    else:
+        # DB2: generated_voters
+        db = _get_db()
+        col = db.generated_voters
+        assemblies = sorted([v for v in col.distinct("ASSEMBLY_NAME") if v])
+        districts  = sorted([v for v in col.distinct("DISTRICT") if v])
+
     _cache_set(cache_key, {'assemblies': assemblies, 'districts': districts}, 300)
     return assemblies, districts
 
@@ -403,9 +506,9 @@ def get_dashboard_stats():
     if cached:
         return cached
     try:
+        # DB2 — app data
         db = _get_db()
-        total_voters       = db.voters.estimated_document_count()
-        generated_count    = db.generated_voters.estimated_document_count()
+        generated_count   = db.generated_voters.estimated_document_count()
         pipeline = [{"$group": {"_id": None,
                                 "total_generated":  {"$sum": {"$cond": [{"$gt": ["$count", 0]}, 1, 0]}},
                                 "total_generations":{"$sum": "$count"},
@@ -423,6 +526,17 @@ def get_dashboard_stats():
         pending_ba      = db.booth_agent_requests.count_documents({"status": "pending"})
         confirmed_ba    = db.booth_agent_requests.count_documents({"status": "confirmed"})
         db_connected    = True
+
+        # DB1 — total voter roll count (sum across all ass_<N> collections)
+        try:
+            voter_db    = _get_voter_db()
+            total_voters = sum(
+                voter_db[c].estimated_document_count()
+                for c in voter_db.list_collection_names()
+            )
+        except Exception:
+            total_voters = 0
+
     except Exception:
         total_voters = total_generated = total_generations = cards_on_cloud = 0
         generated_count = total_referrals = 0
@@ -430,19 +544,19 @@ def get_dashboard_stats():
         db_connected = False
 
     result = {
-        'total_voters': total_voters,
-        'total_generated': total_generated,
-        'total_generations': total_generations,
-        'cards_on_cloud': cards_on_cloud,
-        'generated_voters_count': generated_count,
-        'db_connected': db_connected,
-        'total_referrals': total_referrals,
-        'pending_volunteers': pending_vols,
-        'confirmed_volunteers': confirmed_vols,
-        'pending_booth_agents': pending_ba,
-        'confirmed_booth_agents': confirmed_ba,
-        'cloudinary_credits': '...',
-        'sms_balance': '...',
+        'total_voters':          total_voters,
+        'total_generated':       total_generated,
+        'total_generations':     total_generations,
+        'cards_on_cloud':        cards_on_cloud,
+        'generated_voters_count':generated_count,
+        'db_connected':          db_connected,
+        'total_referrals':       total_referrals,
+        'pending_volunteers':    pending_vols,
+        'confirmed_volunteers':  confirmed_vols,
+        'pending_booth_agents':  pending_ba,
+        'confirmed_booth_agents':confirmed_ba,
+        'cloudinary_credits':    '...',
+        'sms_balance':           '...',
     }
     _cache_set('wtl:dashboard_stats', result, 60)
     return result
