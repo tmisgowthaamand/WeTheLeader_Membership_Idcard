@@ -3,20 +3,32 @@ Face Detection Module for Photo Validation
 ===========================================
 Validates uploaded photos to ensure they contain a clear human face.
 Uses OpenCV with Haar Cascade for fast, accurate face detection.
+OpenCV is lazy-loaded on first use to avoid high memory at startup.
 """
 
-import cv2
-import numpy as np
-from PIL import Image
 import io
 import os
+from PIL import Image
 
-# Initialize face detector (Haar Cascade - lightweight and fast)
-CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-face_cascade = cv2.CascadeClassifier(CASCADE_PATH)
+# ── Lazy OpenCV loader ────────────────────────────────────────────
+_cv2 = None
+_np  = None
+_face_cascade = None
+_eye_cascade  = None
 
-# Backup: eye cascade for additional validation
-eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+def _load_cv2():
+    global _cv2, _np, _face_cascade, _eye_cascade
+    if _cv2 is not None:
+        return _cv2, _np, _face_cascade, _eye_cascade
+    import cv2
+    import numpy as np
+    cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+    eye_path     = cv2.data.haarcascades + 'haarcascade_eye.xml'
+    _cv2           = cv2
+    _np            = np
+    _face_cascade  = cv2.CascadeClassifier(cascade_path)
+    _eye_cascade   = cv2.CascadeClassifier(eye_path)
+    return _cv2, _np, _face_cascade, _eye_cascade
 
 
 def detect_face_in_image(image: Image.Image) -> tuple[bool, str, dict]:
@@ -33,6 +45,8 @@ def detect_face_in_image(image: Image.Image) -> tuple[bool, str, dict]:
             - details: Dict with detection info (face_count, confidence, etc.)
     """
     try:
+        cv2, np, face_cascade, eye_cascade = _load_cv2()
+
         # Convert PIL Image to OpenCV format
         img_array = np.array(image.convert('RGB'))
         gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)

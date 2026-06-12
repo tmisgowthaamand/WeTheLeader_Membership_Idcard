@@ -47,7 +47,7 @@ app = Flask(__name__,
             static_folder=os.path.join(config.BASE_DIR, 'static'))
 app.secret_key = os.getenv('FLASK_SECRET', 'voter-id-gen-secret-2026')
 app.wsgi_app   = ProxyFix(app.wsgi_app, x_for=2, x_proto=1, x_host=1, x_prefix=1)
-app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB max upload
 
 ALLOWED_IMG = {'png', 'jpg', 'jpeg', 'bmp'}
 logger = setup_logging()
@@ -135,7 +135,7 @@ def _get_db():
     global _mongo_client
     if _mongo_client is None:
         _mongo_client = MongoClient(config.MONGO_URI, serverSelectionTimeoutMS=10000,
-                                    maxPoolSize=50, minPoolSize=5)
+                                    maxPoolSize=10, minPoolSize=1)
         logger.info("MongoDB Atlas connected: %s", config.MONGO_DB)
     return _mongo_client[config.MONGO_DB]
 
