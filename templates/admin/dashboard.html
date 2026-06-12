@@ -10,9 +10,18 @@
       <div class="stat-icon" style="background:rgba(33,150,243,0.12); color:#42A5F5;">
         <i class="bi bi-people-fill"></i>
       </div>
-      <div>
-        <div class="stat-value">{{ stats.total_voters }}</div>
-        <div class="stat-label">Total Voters</div>
+      <div style="flex:1;">
+        <div class="stat-value" id="total-voters-count">{{ stats.total_voters | int }}</div>
+        <script>
+          (function(){ var el=document.getElementById('total-voters-count'); if(el) el.textContent=Number(el.textContent.trim()).toLocaleString(); })();
+        </script>
+        <div class="stat-label" style="display:flex;align-items:center;gap:6px;">
+          Total Voters
+          <button onclick="refreshVoterCount(this)" title="Refresh count"
+            style="background:none;border:none;cursor:pointer;padding:0;color:#42A5F5;line-height:1;" >
+            <i class="bi bi-arrow-clockwise" style="font-size:0.85rem;"></i>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -152,8 +161,8 @@
               <span style="width:1px;height:14px;background:var(--border);"></span>
               <div style="font-size:0.8rem;color:var(--text-secondary);">
                 <span
-                  style="color:var(--text-primary);font-weight:700;font-family:var(--font-display);font-size:0.95rem;">{{
-                  stats.total_voters }}</span>
+                  style="color:var(--text-primary);font-weight:700;font-family:var(--font-display);font-size:0.95rem;"
+                  id="db-voter-count">{{ stats.total_voters | int }}</span>
                 <span style="font-size:0.72rem;"> voters</span>
               </div>
             </div>
@@ -289,10 +298,40 @@
 
 {% block extra_js %}
 <script>
+  // Refresh voter count — clears cache then fetches fresh stats
+  function refreshVoterCount(btn) {
+    if (btn) { btn.disabled = true; btn.querySelector('i').classList.add('spin'); }
+    fetch('{{ url_for("admin.api_clear_cache") }}', { method: 'POST' })
+      .then(function () { return fetch('{{ url_for("admin.api_stats") }}'); })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var el = document.getElementById('total-voters-count');
+        if (el && d.total_voters !== undefined) el.textContent = Number(d.total_voters).toLocaleString();
+        var el2 = document.getElementById('db-voter-count');
+        if (el2 && d.total_voters !== undefined) el2.textContent = Number(d.total_voters).toLocaleString();
+      })
+      .catch(function () {})
+      .finally(function () {
+        if (btn) { btn.disabled = false; btn.querySelector('i').classList.remove('spin'); }
+      });
+  }
+
+  // Auto-refresh voter count every 30s
+  setInterval(function () {
+    fetch('{{ url_for("admin.api_stats") }}')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var el = document.getElementById('total-voters-count');
+        if (el && d.total_voters !== undefined) el.textContent = Number(d.total_voters).toLocaleString();
+        var el2 = document.getElementById('db-voter-count');
+        if (el2 && d.total_voters !== undefined) el2.textContent = Number(d.total_voters).toLocaleString();
+      })
+      .catch(function () {});
+  }, 30000);
+
   // Load slow external stats (Cloudinary, SMS, DB size) asynchronously
-  // So dashboard renders instantly - external data fills in within 1-3s
   (function () {
-    fetch(' {{ url_for("admin.api_external_stats") }}').then(function (r) { return r.json(); }).then(function (d) {
+    fetch('{{ url_for("admin.api_external_stats") }}').then(function (r) { return r.json(); }).then(function (d) {
       var
       el; el = document.getElementById('ext-db-size'); if (el && d.mysql_size_mb !== undefined)
         el.textContent = d.mysql_size_mb; el = document.getElementById('ext-db1-size'); if (el &&
@@ -312,5 +351,10 @@
       el = document.getElementById('ext-sms'); if (el && d.sms_balance) el.textContent = d.sms_balance;
     })
       .catch(function () { });
-  })(); </script>
-                      {% endblock %}
+  })();
+</script>
+<style>
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .spin { animation: spin 0.8s linear infinite; display: inline-block; }
+</style>
+{% endblock %}

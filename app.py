@@ -1440,6 +1440,15 @@ def api_external_stats():
     return jsonify(_get_external_stats())
 
 
+@admin_bp.route('/api/clear-cache', methods=['POST'])
+def api_clear_cache():
+    """Force-clear the in-memory cache so the next dashboard load gets fresh counts."""
+    keys_to_clear = [k for k in list(_cache.keys()) if k.startswith('wtl:')]
+    for k in keys_to_clear:
+        _cache.pop(k, None)
+    return jsonify({'success': True, 'cleared': len(keys_to_clear)})
+
+
 @admin_bp.route('/voters/<epic_no>')
 def voter_detail(epic_no):
     epic_no = epic_no.strip().upper()
