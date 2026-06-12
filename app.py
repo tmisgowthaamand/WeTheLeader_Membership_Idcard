@@ -143,13 +143,18 @@ def _get_voter_db():
     """DB1: DigitalOcean voter roll — READ-ONLY. ass_<N> collections."""
     global _voter_client
     if _voter_client is None:
-        _voter_client = MongoClient(
-            config.MONGO_VOTER_URL,
-            serverSelectionTimeoutMS=15000,
-            maxPoolSize=5,
-            minPoolSize=1,
-        )
-        logger.info("DigitalOcean voter_db connected: %s", config.MONGO_VOTER_DB_NAME)
+        try:
+            _voter_client = MongoClient(
+                config.MONGO_VOTER_URL,
+                serverSelectionTimeoutMS=15000,
+                maxPoolSize=5,
+                minPoolSize=1,
+                connect=False,   # defer actual connection until first operation
+            )
+            logger.info("DigitalOcean voter_db client created: %s", config.MONGO_VOTER_DB_NAME)
+        except Exception as e:
+            logger.error("DigitalOcean voter_db init error: %s", e)
+            return None
     return _voter_client[config.MONGO_VOTER_DB_NAME]
 
 
@@ -339,6 +344,9 @@ def find_voter_by_epic(epic_no: str) -> dict | None:
 
     try:
         voter_db = _get_voter_db()
+        if voter_db is None:
+            logger.error("Voter DB unavailable — cannot look up EPIC %s", epic_no)
+            return None
         col_names = voter_db.list_collection_names()   # cached by driver
         for col_name in col_names:
             doc = voter_db[col_name].find_one({"EPIC_NO": epic_no})
