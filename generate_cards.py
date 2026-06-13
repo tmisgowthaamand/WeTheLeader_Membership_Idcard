@@ -170,6 +170,7 @@ def generate_card(voter: dict,
     assembly = clean(voter.get('assembly_name','') or voter.get('assembly','')).upper()
     district = clean(voter.get('district','') or voter.get('DISTRICT_NAME','')).upper()
     ptc_code = clean(voter.get('ptc_code', ''))
+    part_no  = clean(voter.get('part_no','') or voter.get('PART_NO','')).upper()
 
     # Draw generated text once over the cleaned front template.
     F_VAL = int(H * 0.026)
@@ -229,9 +230,10 @@ def generate_card(voter: dict,
 
     field_font = load_font(F_VAL, bold=True)
     field_rows = (
-        ("EPIC NO", epic_no),
+        ("EPIC NO",  epic_no),
         ("ASSEMBLY", assembly),
         ("DISTRICT", district),
+        ("PART NO",  part_no if part_no else "-"),
     )
 
     for row_index, (label, value) in enumerate(field_rows):

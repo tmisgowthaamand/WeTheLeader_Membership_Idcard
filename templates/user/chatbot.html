@@ -135,6 +135,7 @@
   }
   </script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -1589,6 +1590,127 @@
     body.dark-mode .profile-detail-value {
       color: #e9edef;
     }
+
+    /* ── Inline HTML Membership Card Preview ── */
+    .html-card-wrapper {
+      width: 100%;
+      max-width: 520px;
+      margin: 8px 0 4px;
+    }
+
+    .html-card-scene {
+      width: 100%;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.22);
+      position: relative;
+    }
+
+    /* The card itself is rendered at 856x540 then scaled down via transform */
+    .html-card-outer {
+      width: 856px;
+      height: 540px;
+      transform-origin: top left;
+      /* scale is set via JS based on container width */
+    }
+
+    /* FRONT card styles (scoped inside .html-card-outer.card-front-render) */
+    .card-front-render {
+      background: #ffffff;
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+      width: 856px;
+      height: 540px;
+      font-family: 'Outfit', 'Segoe UI', sans-serif;
+    }
+
+    .card-front-render .cf-border-tl { position:absolute; top:10px; left:10px; width:50%; height:2px; background:#FFB81C; border-radius:15px 0 0 0; }
+    .card-front-render .cf-border-tr { position:absolute; top:10px; right:10px; width:50%; height:2px; background:#00843D; border-radius:0 15px 0 0; }
+    .card-front-render .cf-border-bl { position:absolute; bottom:10px; left:10px; width:35%; height:2px; background:#00843D; border-radius:0 0 0 15px; }
+    .card-front-render .cf-border-br { position:absolute; bottom:10px; right:10px; width:65%; height:2px; background:#FF671F; border-radius:0 0 15px 0; }
+    .card-front-render .cf-border-l  { position:absolute; top:10px; left:10px; width:2px; height:calc(100% - 20px); background:linear-gradient(180deg,#FFB81C 0%,#FFB81C 50%,#00843D 100%); }
+    .card-front-render .cf-border-r  { position:absolute; top:10px; right:10px; width:2px; height:calc(100% - 20px); background:linear-gradient(180deg,#00843D 0%,#00843D 50%,#FF671F 100%); }
+
+    .card-front-render .cf-header {
+      display:flex; justify-content:center; align-items:center;
+      padding:15px; position:relative; z-index:25; min-height:100px;
+    }
+    .card-front-render .cf-logo {
+      position:absolute; left:35px; top:15px; width:105px; height:105px;
+      border-radius:50%; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,.12);
+      display:flex; justify-content:center; align-items:center; overflow:hidden;
+      border:3px solid #fff; z-index:30;
+    }
+    .card-front-render .cf-logo img { width:95%; height:95%; object-fit:contain; }
+    .card-front-render .cf-title-area { text-align:center; display:flex; flex-direction:column; align-items:center; }
+    .card-front-render .cf-title {
+      display:flex; justify-content:center; align-items:center; gap:10px;
+      font-size:48px; font-weight:800; letter-spacing:-1px; color:#000;
+      margin-top:5px; text-transform:uppercase;
+    }
+    .card-front-render .cf-flag { width:28px; height:18px; display:flex; flex-direction:column; border:.5px solid #ccc; }
+    .card-front-render .cf-flag .f-o { height:33.33%; background:#FF9933; }
+    .card-front-render .cf-flag .f-w { height:33.33%; background:#fff; }
+    .card-front-render .cf-flag .f-g { height:33.33%; background:#138808; }
+    .card-front-render .cf-subtitle { font-size:22px; font-weight:400; color:#444; letter-spacing:2px; text-transform:uppercase; }
+    .card-front-render .cf-tagline  { font-size:12px; font-weight:700; color:#333; letter-spacing:1px; }
+
+    .card-front-render .cf-member-area {
+      position:absolute; left:30px; top:55%; transform:translateY(-50%); z-index:22;
+      display:flex; flex-direction:column; gap:8px;
+    }
+    .card-front-render .cf-member-details-row { display:flex; gap:15px; align-items:flex-start; }
+    .card-front-render .cf-photo {
+      width:110px; height:135px; background:#fff; border:2px solid #ddd;
+      border-radius:6px; box-shadow:0 3px 12px rgba(0,0,0,.1);
+      display:flex; justify-content:center; align-items:center; overflow:hidden; flex-shrink:0;
+    }
+    .card-front-render .cf-photo img { width:100%; height:100%; object-fit:cover; }
+    .card-front-render .cf-details { display:flex; flex-direction:column; gap:10px; padding-top:5px; }
+    .card-front-render .cf-row { display:flex; gap:0; align-items:baseline; }
+    .card-front-render .cf-lbl {
+      width:90px; font-size:13px; font-weight:700; color:#000;
+      letter-spacing:.3px; flex-shrink:0; text-align:left; text-transform:uppercase;
+    }
+    .card-front-render .cf-colon { width:15px; color:#333; font-weight:700; text-align:center; flex-shrink:0; }
+    .card-front-render .cf-val { font-size:13px; font-weight:400; color:#000; max-width:220px; word-wrap:break-word; }
+    .card-front-render .cf-wtl-no {
+      font-size:13px; font-weight:700; color:#000; letter-spacing:.5px;
+      text-align:center; margin-top:4px; text-transform:uppercase;
+    }
+    .card-front-render .cf-person-img {
+      position:absolute; top:48%; right:-31px; transform:translateY(-50%);
+      width:460px; height:auto; object-fit:contain; z-index:15; pointer-events:none;
+    }
+    .card-front-render .cf-footer {
+      position:absolute; bottom:10px; left:0; right:0; z-index:30;
+      display:flex; justify-content:center; align-items:center;
+    }
+    .card-front-render .cf-member-label { font-size:22px; font-weight:900; letter-spacing:1px; color:#1a1a1a; }
+
+    /* BACK card styles */
+    .card-back-render {
+      background:#ffffff; border-radius:20px; position:relative; overflow:hidden;
+      width:856px; height:540px; font-family:'Outfit','Segoe UI',sans-serif;
+      display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+      padding:25px; box-sizing:border-box;
+    }
+    .card-back-render::before {
+      content:""; position:absolute; top:0; left:0; right:0; height:350px;
+      background:radial-gradient(circle at center,rgba(0,0,0,.03) 0%,transparent 70%); z-index:1; pointer-events:none;
+    }
+    .card-back-render .cb-logo-area { width:320px; height:auto; z-index:5; margin-bottom:5px; text-align:center; }
+    .card-back-render .cb-logo-area img { width:100%; height:auto; object-fit:contain; }
+    .card-back-render .cb-title { font-size:34px; font-weight:900; color:#1a1e36; margin-bottom:15px; z-index:5; letter-spacing:1px; text-align:center; }
+    .card-back-render .cb-tc { width:100%; border-top:2px solid #b71c1c; padding-top:10px; z-index:5; text-align:left; }
+    .card-back-render .cb-tc-head { color:#b71c1c; font-size:16px; font-weight:800; margin-bottom:8px; text-decoration:underline; }
+    .card-back-render .cb-tc-list { list-style:none; display:flex; flex-direction:column; gap:4px; padding:0; margin:0; }
+    .card-back-render .cb-tc-item { font-size:12px; color:#333; line-height:1.3; font-weight:600; display:flex; gap:8px; }
+    .card-back-render .cb-footer-bar {
+      position:absolute; bottom:0; left:0; right:0; height:12px;
+      background:linear-gradient(90deg,#FFB81C 0%,#FF671F 33%,#00843D 66%,#1a1a1a 100%); opacity:.8;
+    }
   </style>
 </head>
 
@@ -1781,13 +1903,15 @@
         if (!wrap) return;
         wrap.querySelectorAll('.card-tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        const img = wrap.querySelector('.bot-card-img');
-        if (img) {
-          if (side === 'front') img.src = front;
-          else if (side === 'back') img.src = back;
-          else if (side === 'combined') img.src = combined;
+        const frontEl    = wrap.querySelector('.html-card-front-panel');
+        const backEl     = wrap.querySelector('.html-card-back-panel');
+        const combinedEl = wrap.querySelector('.html-card-combined-panel');
+
+        if (frontEl && backEl) {
+          frontEl.style.display    = (side === 'front')    ? '' : 'none';
+          backEl.style.display     = (side === 'back')     ? '' : 'none';
+          if (combinedEl) combinedEl.style.display = (side === 'combined') ? '' : 'none';
         }
-        // Update download link if it's the combined view
         const dl = wrap.querySelector('.download-btn');
         if (dl) {
           if (side === 'combined') dl.href = combined;
@@ -1795,6 +1919,111 @@
           else if (side === 'back') dl.href = back;
         }
       };
+
+      /* ── Build inline HTML membership card preview ── */
+      function buildHTMLCardPreview(v, photoB64, ptcCode, frontImgUrl, backImgUrl) {
+        const name     = ((v.FM_NAME_EN || v.name || '') + ' ' + (v.LASTNAME_EN || '')).trim() || v.name || '';
+        const epicNo   = v.EPIC_NO || v.epic_no || '';
+        const assembly = v.ASSEMBLY_NAME || v.assembly_name || '';
+        const district = v.DISTRICT_NAME || v.district || '';
+        const gender   = v.GENDER || v.sex || '';
+        const age      = v.AGE || v.age || '';
+        const wtlCode  = ptcCode || '';
+        const partNo   = v.PART_NO || v.part_no || '';
+
+        // Escape for HTML attribute safety
+        function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+        const logoSrc = '/static/newfavicon.png';
+        const backLogoSrc = '/static/new-name-logo.png';
+        const personSrc = '/static/person_img.png'; // fallback decorative silhouette
+
+        // Photo: use cropped b64 if available, else the Cloudinary URL
+        const photoSrc = photoB64 || frontImgUrl || '';
+
+        /* ── FRONT CARD ── */
+        const frontHTML = `
+<div class="card-front-render" id="htmlCardFront">
+  <div class="cf-border-tl"></div><div class="cf-border-tr"></div>
+  <div class="cf-border-bl"></div><div class="cf-border-br"></div>
+  <div class="cf-border-l"></div><div class="cf-border-r"></div>
+
+  <div class="cf-header">
+    <div class="cf-logo"><img src="${esc(logoSrc)}" alt="WTL Logo"></div>
+    <div class="cf-title-area">
+      <div class="cf-title">
+        <div class="cf-flag"><div class="f-o"></div><div class="f-w"></div><div class="f-g"></div></div>
+        WTL
+        <div class="cf-flag"><div class="f-o"></div><div class="f-w"></div><div class="f-g"></div></div>
+      </div>
+      <div class="cf-subtitle">WE THE LEADERS</div>
+      <div class="cf-tagline">LEAD THE CHANGE</div>
+    </div>
+  </div>
+
+  <div class="cf-member-area">
+    <div class="cf-member-details-row">
+      <div class="cf-photo">
+        ${photoSrc ? `<img src="${esc(photoSrc)}" alt="Member Photo">` : '<svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="15" r="8" fill="#ccc"/><path d="M4 36c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#ccc"/></svg>'}
+      </div>
+      <div class="cf-details">
+        <div class="cf-row"><span class="cf-lbl">Name</span><span class="cf-colon">:</span><span class="cf-val">${esc(name)}</span></div>
+        <div class="cf-row"><span class="cf-lbl">EPIC No</span><span class="cf-colon">:</span><span class="cf-val">${esc(epicNo)}</span></div>
+        <div class="cf-row"><span class="cf-lbl">Assembly</span><span class="cf-colon">:</span><span class="cf-val">${esc(assembly)}</span></div>
+        <div class="cf-row"><span class="cf-lbl">District</span><span class="cf-colon">:</span><span class="cf-val">${esc(district)}</span></div>
+        <div class="cf-row"><span class="cf-lbl">Part No</span><span class="cf-colon">:</span><span class="cf-val">${partNo ? esc(partNo) : '-'}</span></div>
+        ${gender ? `<div class="cf-row"><span class="cf-lbl">Gender</span><span class="cf-colon">:</span><span class="cf-val">${esc(gender)}</span></div>` : ''}
+        ${age ? `<div class="cf-row"><span class="cf-lbl">Age</span><span class="cf-colon">:</span><span class="cf-val">${esc(age)}</span></div>` : ''}
+      </div>
+    </div>
+    ${wtlCode ? `<div class="cf-wtl-no">${esc(wtlCode)}</div>` : ''}
+  </div>
+
+  <div class="cf-footer">
+    <span class="cf-member-label">MEMBERSHIP CARD</span>
+  </div>
+</div>`;
+
+        /* ── BACK CARD ── */
+        const backHTML = `
+<div class="card-back-render" id="htmlCardBack">
+  <div class="cb-logo-area">
+    <img src="${esc(backLogoSrc)}" alt="WTL Logo" onerror="this.style.display='none'">
+  </div>
+  <div class="cb-title">நாமே தலைவர்கள்</div>
+  <div class="cb-tc">
+    <div class="cb-tc-head">Terms &amp; Conditions:</div>
+    <ul class="cb-tc-list">
+      <li class="cb-tc-item"><span>1.</span><span>This card is the property of We The Leaders and is non-transferable.</span></li>
+      <li class="cb-tc-item"><span>2.</span><span>If found, please return to the nearest WTL office or contact us.</span></li>
+      <li class="cb-tc-item"><span>3.</span><span>This card must be produced on demand by authorised personnel.</span></li>
+      <li class="cb-tc-item"><span>4.</span><span>Misuse of this card is a punishable offence.</span></li>
+      <li class="cb-tc-item"><span>5.</span><span>For queries contact: info@wetheleaders.org</span></li>
+    </ul>
+  </div>
+  <div class="cb-footer-bar"></div>
+</div>`;
+
+        return { frontHTML, backHTML };
+      }
+
+      /* ── Scale an .html-card-outer element to fit its container ── */
+      function scaleHTMLCard(outerEl) {
+        if (!outerEl) return;
+        const scene = outerEl.parentElement; // .html-card-scene
+        if (!scene) return;
+        const containerW = scene.offsetWidth || 400;
+        const scale = Math.min(containerW / 856, 1);
+        outerEl.style.transform = `scale(${scale})`;
+        outerEl.style.transformOrigin = 'top left';
+        outerEl.style.width = '856px';
+        outerEl.style.height = '540px';
+        // Shrink the scene height to match scaled height
+        scene.style.height = Math.round(540 * scale) + 'px';
+        scene.style.overflow = 'hidden';
+        scene.style.borderRadius = '14px';
+        scene.style.boxShadow = '0 8px 30px rgba(0,0,0,0.22)';
+      }
 
       // Helper to handle data URL download without top-frame navigation error
       window.handleDownload = function (e, btn) {
@@ -1944,13 +2173,12 @@
           input.value = '';
           userMsg(txt);
           state = S.AWAIT_EPIC;
-          epic = ''; voter = null;
-          setPlaceholder('Enter your EPIC Number...');
+          epic = ''; voter = null; croppedPhotoB64 = null; photoFile = null;
+          setPlaceholder('Enter EPIC Number (e.g. KFD3622586)...');
           input.inputMode = 'text';
           input.autocapitalize = 'characters';
           await botReply(
-            '\u{1F44B} Ready for another card!<br><br>' +
-            'Please enter the <strong>EPIC Number</strong>:', 600);
+            '\ud83d\udccb Please enter the next member\'s <strong>EPIC Number</strong>:', 500);
           return;
         }
       }
@@ -2087,21 +2315,39 @@
 
             let h = '\u{1F389} <strong>Your ID Card has been generated!</strong><br><br>';
 
-            // ── Enhanced Preview Tabs (from demo) ────────────────
+            // ── HTML Card Preview (styled inline card) ────────────
             const front = res.card_url;
             const back = res.back_url || '/static/card_back.jpeg';
             const combined = res.combined_url || res.card_url;
+            const v = voter || {};
+            const { frontHTML, backHTML } = buildHTMLCardPreview(v, croppedPhotoB64, res.ptc_code, front, back);
 
-            h += '<div class="chat-card-preview-area">';
+            // Unique ID for this card instance
+            const cardUid = 'card_' + Date.now();
+
+            h += `<div class="chat-card-preview-area" id="${cardUid}">`;
             h += '  <div class="chat-card-tabs">';
-            h += `    <button class="card-tab-btn active" onclick="switchBotTab(this,'front','${front}','${back}','${combined}')">Front</button>`;
-            h += `    <button class="card-tab-btn" onclick="switchBotTab(this,'back','${front}','${back}','${combined}')">Back</button>`;
-            h += `    <button class="card-tab-btn" onclick="switchBotTab(this,'combined','${front}','${back}','${combined}')">Combined</button>`;
+            h += `    <button class="card-tab-btn active" onclick="switchBotTab(this,'front','${front}','${back}','${combined}')">&#127981; Front</button>`;
+            h += `    <button class="card-tab-btn" onclick="switchBotTab(this,'back','${front}','${back}','${combined}')">&#128196; Back</button>`;
+            h += `    <button class="card-tab-btn" onclick="switchBotTab(this,'combined','${front}','${back}','${combined}')">&#128248; Download View</button>`;
             h += '  </div>';
-            h += '  <div style="border-radius:12px; overflow:hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">';
-            h += `    <img src="${front}" class="bot-card-img" style="width:100%; display:block; border-radius:12px;" alt="Card View">`;
+
+            // Front HTML card panel
+            h += `  <div class="html-card-front-panel" style="margin-bottom:8px;">`;
+            h += `    <div class="html-card-scene"><div class="html-card-outer" id="${cardUid}_front" style="overflow:hidden;">${frontHTML}</div></div>`;
             h += '  </div>';
-            h += '</div>';
+
+            // Back HTML card panel (hidden by default)
+            h += `  <div class="html-card-back-panel" style="display:none; margin-bottom:8px;">`;
+            h += `    <div class="html-card-scene"><div class="html-card-outer" id="${cardUid}_back" style="overflow:hidden;">${backHTML}</div></div>`;
+            h += '  </div>';
+
+            // Combined panel — shows the actual generated JPEG (for download preview)
+            h += `  <div class="html-card-combined-panel" style="display:none; margin-bottom:8px;">`;
+            h += `    <img src="${combined}" style="width:100%;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.22);display:block;" alt="Combined Card">`;
+            h += '  </div>';
+
+            h += '</div>'; // end chat-card-preview-area
 
             // ── Action buttons ───────────────────────────────────
             h += '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">';
@@ -2116,10 +2362,82 @@
             h += '</div>';
             h += '<div style="margin-top:8px;font-size:0.82rem;color:#8a9ab5;">'
               + '<em>\u2139\uFE0F Download includes both front &amp; back in one image.</em></div>';
-            h += '<div style="margin-top:6px;font-size:0.82rem;color:#8a9ab5;">'
-              + '<em>Type anything to generate a card for another member.</em></div>';
 
             await botReply(h, 600);
+
+            // ── Confirmation + "Generate Another" button ─────────
+            setTimeout(async () => {
+              const name = (res.voter_name || (voter && (voter.name || voter.FM_NAME_EN)) || '').trim();
+              let confirm = '\u2705 <strong>Card generated successfully!</strong>';
+              if (name) confirm += `<br>\ud83d\udc64 <strong>${name}</strong> — your membership card is ready.`;
+              confirm += `<br>\ud83c\udff7\ufe0f Member ID: <strong>${res.ptc_code || ''}</strong>`;
+              confirm += `
+<div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
+  <button class="btn-reply" id="generateAnotherBtn"
+    style="background:#00a884;color:#fff;font-weight:700;">
+    \u{1F501} Generate Card for Another Member
+  </button>
+  <button class="btn-reply" id="goHomeBtn"
+    style="background:#f0f2f5;color:#333;font-weight:600;">
+    \ud83c\udfe0 Back to Home
+  </button>
+</div>`;
+              await botReply(confirm, 400);
+
+              const anotherBtn = document.getElementById('generateAnotherBtn');
+              if (anotherBtn) {
+                anotherBtn.addEventListener('click', () => {
+                  anotherBtn.disabled = true;
+                  document.querySelectorAll('#generateAnotherBtn, #goHomeBtn').forEach(b => b.disabled = true);
+                  userMsg('\u{1F501} Generate Card for Another Member');
+                  state = S.AWAIT_EPIC;
+                  epic = ''; voter = null; croppedPhotoB64 = null; photoFile = null;
+                  setPlaceholder('Enter EPIC Number (e.g. KFD3622586)...');
+                  input.inputMode = 'text';
+                  input.autocapitalize = 'characters';
+                  unlockInput();
+                  botReply('\ud83d\udccb Please enter the next member\'s <strong>EPIC Number</strong>:', 500);
+                });
+              }
+              const homeBtn = document.getElementById('goHomeBtn');
+              if (homeBtn) {
+                homeBtn.addEventListener('click', () => {
+                  document.querySelectorAll('#generateAnotherBtn, #goHomeBtn').forEach(b => b.disabled = true);
+                  userMsg('\ud83c\udfe0 Back to Home');
+                  state = S.WELCOME;
+                  epic = ''; voter = null; croppedPhotoB64 = null; photoFile = null;
+                  lockInput();
+                  botReply('\ud83d\udc4b Back at the start! Click <strong>Start</strong> below whenever you\'re ready.'
+                    + '<div style="margin-top:10px;"><button class="btn-reply" id="restartBtn2" style="background:#00a884;color:#fff;">'
+                    + '\u25b6\ufe0f Start Again</button></div>', 400).then(() => {
+                    const rb = document.getElementById('restartBtn2');
+                    if (rb) rb.addEventListener('click', () => {
+                      rb.disabled = true;
+                      userMsg('Start');
+                      state = S.AWAIT_EPIC;
+                      setPlaceholder('Enter EPIC Number...');
+                      input.inputMode = 'text';
+                      input.autocapitalize = 'characters';
+                      unlockInput();
+                      botReply('\u2705 Ready! Enter the <strong>EPIC Number</strong>:', 500);
+                    });
+                  });
+                });
+              }
+            }, 800);
+
+            // Scale the HTML card panels to fit the chat bubble width
+            requestAnimationFrame(() => {
+              const outerFront = document.getElementById(cardUid + '_front');
+              const outerBack  = document.getElementById(cardUid + '_back');
+              scaleHTMLCard(outerFront);
+              scaleHTMLCard(outerBack);
+              // Re-scale on window resize
+              window.addEventListener('resize', () => {
+                scaleHTMLCard(document.getElementById(cardUid + '_front'));
+                scaleHTMLCard(document.getElementById(cardUid + '_back'));
+              });
+            });
 
           } else {
             state = S.AWAIT_PHOTO;

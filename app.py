@@ -138,6 +138,147 @@ def to_ist(dt_str):
 _voter_client: MongoClient | None = None   # DB1 — DigitalOcean
 _app_client:   MongoClient | None = None   # DB2 — Atlas
 
+# ── Local MySQL voter DB (Laragon / dev fallback) ─────────────────
+_mysql_voter_conn = None
+
+def _is_local_mysql_mode() -> bool:
+    """True when MONGO_VOTER_URL is unset / still a placeholder."""
+    url = config.MONGO_VOTER_URL or ''
+    return not url or '<username>' in url or '<password>' in url or '<cluster>' in url
+
+def _get_mysql_voter_conn():
+    """Return a mysql-connector connection to the local Laragon voter_db."""
+    global _mysql_voter_conn
+    try:
+        import mysql.connector
+        if _mysql_voter_conn is None or not _mysql_voter_conn.is_connected():
+            _mysql_voter_conn = mysql.connector.connect(
+                host=os.getenv('LOCAL_MYSQL_HOST', '127.0.0.1'),
+                port=int(os.getenv('LOCAL_MYSQL_PORT', '3306')),
+                user=os.getenv('LOCAL_MYSQL_USER', 'root'),
+                password=os.getenv('LOCAL_MYSQL_PASS', ''),
+                database='voter_db',
+                connection_timeout=10,
+            )
+            logger.info("Local MySQL voter_db connected (Laragon)")
+        return _mysql_voter_conn
+    except Exception as e:
+        logger.error("Local MySQL connection error: %s", e)
+        return None
+
+def _mysql_row_to_voter(row: dict) -> dict | None:
+    """Convert a MySQL ass_16 row (dict) to the standard voter dict."""
+    if not row:
+        return None
+    voter_name   = row.get('VOTER_NAME', '')
+    relation_name = row.get('RELATION_NAME', '')
+    district     = row.get('DISTRICT', '')
+    mobile       = row.get('MOBILE_NUMBER', '') or ''
+    return {
+        'epic_no':          row.get('EPIC_NO', ''),
+        'name':             voter_name,
+        'assembly':         str(row.get('ASSEMBLY_NO') or ''),
+        'assembly_name':    row.get('ASSEMBLY_NAME', ''),
+        'district':         district,
+        'age':              row.get('AGE', ''),
+        'sex':              row.get('GENDER', ''),
+        'relation_type':    row.get('RELATION_TYPE', ''),
+        'relation_name':    relation_name,
+        'relation_name_v1': '',
+        'mobile':           mobile,
+        'part_no':          str(row.get('PART_NO') or ''),
+        'section_no':       str(row.get('SECTION_NO') or ''),
+        'slno_in_part':     str(row.get('SERIAL_NO') or ''),
+        'house_no':         row.get('HOUSE_NO', ''),
+        'house_no_v1':      '',
+        'dob':              '',
+        'name_v1':          '',
+        'org_list_no':      '',
+        'district_id':      '',
+        'id':               str(row.get('ID', '')),
+        # Raw uppercase keys for card generation
+        'FM_NAME_EN':    voter_name,
+        'LASTNAME_EN':   '',
+        'FM_NAME_V1':    '',
+        'LASTNAME_V1':   '',
+        'AC_NO':         row.get('ASSEMBLY_NO', ''),
+        'ASSEMBLY_NAME': row.get('ASSEMBLY_NAME', ''),
+        'DISTRICT_NAME': district,
+        'PART_NO':       row.get('PART_NO'),
+        'SECTION_NO':    row.get('SECTION_NO'),
+        'SLNOINPART':    row.get('SERIAL_NO'),
+        'C_HOUSE_NO':    row.get('HOUSE_NO'),
+        'C_HOUSE_NO_V1': '',
+        'RLN_TYPE':      row.get('RELATION_TYPE', ''),
+        'RLN_FM_NM_EN':  relation_name,
+        'RLN_L_NM_EN':   '',
+        'RLN_FM_NM_V1':  '',
+        'RLN_L_NM_V1':   '',
+        'EPIC_NO':       row.get('EPIC_NO', ''),
+        'GENDER':        row.get('GENDER', ''),
+        'AGE':           row.get('AGE', ''),
+        'DOB':           '',
+        'MOBILE_NO':     mobile,
+        'ORG_LIST_NO':   '',
+    }
+
+def _mysql_find_by_epic(epic_no: str) -> dict | None:
+    """Query local MySQL ass_* tables by EPIC_NO."""
+    conn = _get_mysql_voter_conn()
+    if not conn:
+        return None
+    try:
+        import mysql.connector
+        cur = conn.cursor(dictionary=True)
+        # Query all ass_* tables (here we have ass_16 locally)
+        cur.execute("SHOW TABLES LIKE 'ass_%'")
+        tables = [row[f'Tables_in_voter_db (ass_%)'] for row in cur.fetchall()
+                  if row]
+        # Flatten — key is always the first column value
+        cur.execute("SHOW TABLES LIKE 'ass_%'")
+        rows = cur.fetchall()
+        tables = [list(r.values())[0] for r in rows]
+        for tbl in tables:
+            cur.execute(f"SELECT * FROM `{tbl}` WHERE EPIC_NO = %s LIMIT 1",
+                        (epic_no,))
+            row = cur.fetchone()
+            if row:
+                cur.close()
+                return _mysql_row_to_voter(row)
+        cur.close()
+    except Exception as e:
+        logger.error("MySQL EPIC lookup error: %s", e)
+        try:
+            _mysql_voter_conn.reconnect()
+        except Exception:
+            pass
+    return None
+
+def _mysql_find_by_mobile(mobile: str) -> list[dict]:
+    """Query local MySQL ass_* tables by MOBILE_NUMBER."""
+    conn = _get_mysql_voter_conn()
+    if not conn:
+        return []
+    results = []
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute("SHOW TABLES LIKE 'ass_%'")
+        tables = [list(r.values())[0] for r in cur.fetchall()]
+        for tbl in tables:
+            cur.execute(
+                f"SELECT * FROM `{tbl}` WHERE MOBILE_NUMBER = %s LIMIT 5",
+                (mobile,))
+            for row in cur.fetchall():
+                v = _mysql_row_to_voter(row)
+                if v:
+                    results.append(v)
+            if results:
+                break
+        cur.close()
+    except Exception as e:
+        logger.error("MySQL mobile lookup error: %s", e)
+    return results
+
 
 def _get_voter_db():
     """DB1: DigitalOcean voter roll — READ-ONLY. ass_<N> collections."""
@@ -146,21 +287,265 @@ def _get_voter_db():
         try:
             _voter_client = MongoClient(
                 config.MONGO_VOTER_URL,
-                serverSelectionTimeoutMS=15000,
-                maxPoolSize=5,
-                minPoolSize=1,
-                connect=False,   # defer actual connection until first operation
+                serverSelectionTimeoutMS=20000,
+                socketTimeoutMS=30000,
+                connectTimeoutMS=20000,
+                maxPoolSize=10,
+                minPoolSize=2,
+                connect=True,   # connect eagerly so first request is fast
             )
-            logger.info("DigitalOcean voter_db client created: %s", config.MONGO_VOTER_DB_NAME)
+            # Warm up: force an actual connection now
+            _voter_client.admin.command('ping')
+            logger.info("DigitalOcean voter_db connected: %s", config.MONGO_VOTER_DB_NAME)
         except Exception as e:
             logger.error("DigitalOcean voter_db init error: %s", e)
+            _voter_client = None
             return None
     return _voter_client[config.MONGO_VOTER_DB_NAME]
 
 
+def _is_local_app_db_mode() -> bool:
+    """True when MONGO_URI is unset / still a placeholder."""
+    url = config.MONGO_URI or ''
+    return not url or '<username>' in url or '<password>' in url or '<cluster>' in url
+
+# ── Local SQLite mock DB for dev (when Atlas not configured) ──────
+_sqlite_db_path = os.path.join(config.BASE_DIR, 'local_app_db.sqlite3')
+
+def _get_local_sqlite():
+    """Return a sqlite3 connection for local dev when Atlas is unavailable."""
+    import sqlite3
+    conn = sqlite3.connect(_sqlite_db_path, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    conn.execute("""CREATE TABLE IF NOT EXISTS generated_voters (
+        EPIC_NO TEXT PRIMARY KEY,
+        ptc_code TEXT, photo_url TEXT, card_url TEXT,
+        combined_url TEXT, generated_at TEXT,
+        FM_NAME_EN TEXT, LASTNAME_EN TEXT,
+        ASSEMBLY_NAME TEXT, DISTRICT_NAME TEXT, AC_NO TEXT,
+        referred_members_count INTEGER DEFAULT 0,
+        volunteer_status TEXT DEFAULT '',
+        booth_agent_status TEXT DEFAULT '',
+        source TEXT DEFAULT ''
+    )""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS generation_stats (
+        epic_no TEXT PRIMARY KEY,
+        card_url TEXT, combined_url TEXT, photo_url TEXT,
+        last_generated TEXT, count INTEGER DEFAULT 0
+    )""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS otp_sessions (
+        mobile TEXT PRIMARY KEY,
+        otp TEXT, created_at TEXT, verified INTEGER DEFAULT 0
+    )""")
+    conn.commit()
+    return conn
+
+
+class _LocalDevDB:
+    """Minimal MongoDB-like interface backed by SQLite for local dev."""
+
+    def __init__(self):
+        self._conn = _get_local_sqlite()
+
+    def _conn_ok(self):
+        try:
+            self._conn.execute("SELECT 1")
+            return True
+        except Exception:
+            self._conn = _get_local_sqlite()
+            return True
+
+    # ── generated_voters ─────────────────────────────────────────
+    @property
+    def generated_voters(self):
+        return _LocalDevCollection(self._conn, 'generated_voters', 'EPIC_NO')
+
+    # ── generation_stats ─────────────────────────────────────────
+    @property
+    def generation_stats(self):
+        return _LocalDevCollection(self._conn, 'generation_stats', 'epic_no')
+
+    # ── otp_sessions ─────────────────────────────────────────────
+    @property
+    def otp_sessions(self):
+        return _LocalDevCollection(self._conn, 'otp_sessions', 'mobile')
+
+    # ── volunteer / booth collections (stubs) ────────────────────
+    @property
+    def volunteer_requests(self):
+        return _LocalDevStub()
+
+    @property
+    def booth_agent_requests(self):
+        return _LocalDevStub()
+
+    def __getattr__(self, name):
+        return _LocalDevStub()
+
+    def command(self, *a, **kw):
+        return {'dataSize': 0}
+
+    def list_collection_names(self):
+        return ['generated_voters', 'generation_stats', 'otp_sessions']
+
+
+class _LocalDevStub:
+    """No-op stub for unimplemented collections."""
+    def find_one(self, *a, **kw): return None
+    def find(self, *a, **kw): return []
+    def update_one(self, *a, **kw): return None
+    def insert_one(self, *a, **kw): return None
+    def count_documents(self, *a, **kw): return 0
+    def estimated_document_count(self): return 0
+    def create_index(self, *a, **kw): return None
+    def aggregate(self, *a, **kw): return []
+    def distinct(self, field, *a, **kw): return []
+
+
+class _LocalDevCollection:
+    """Minimal SQLite-backed collection imitating pymongo Collection."""
+
+    def __init__(self, conn, table: str, pk: str):
+        self._conn  = conn
+        self._table = table
+        self._pk    = pk
+
+    def _cols(self):
+        cur = self._conn.execute(f"PRAGMA table_info({self._table})")
+        return [r[1] for r in cur.fetchall()]
+
+    def find_one(self, query: dict, projection=None, sort=None):
+        import json
+        where, vals = self._build_where(query)
+        sql = f"SELECT * FROM {self._table}"
+        if where:
+            sql += f" WHERE {where}"
+        sql += " LIMIT 1"
+        cur = self._conn.execute(sql, vals)
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+    def find(self, query: dict = None, projection=None, limit=100, sort=None):
+        where, vals = self._build_where(query or {})
+        sql = f"SELECT * FROM {self._table}"
+        if where:
+            sql += f" WHERE {where}"
+        sql += f" LIMIT {limit}"
+        cur = self._conn.execute(sql, vals)
+        return [dict(r) for r in cur.fetchall()]
+
+    def update_one(self, query: dict, update: dict, upsert=False):
+        set_data  = update.get('$set', {})
+        inc_data  = update.get('$inc', {})
+        soi_data  = update.get('$setOnInsert', {})
+        cols      = self._cols()
+
+        # Check existence
+        where, vals = self._build_where(query)
+        sql_check = f"SELECT {self._pk} FROM {self._table}"
+        if where:
+            sql_check += f" WHERE {where}"
+        cur = self._conn.execute(sql_check, vals)
+        exists = cur.fetchone() is not None
+
+        if exists:
+            updates = {k: v for k, v in set_data.items() if k in cols}
+            for k, v in inc_data.items():
+                if k in cols:
+                    updates[k] = v  # simplified: just set value for inc
+            if updates:
+                set_clause = ', '.join(f"{k}=?" for k in updates)
+                set_vals   = list(updates.values())
+                sql_upd    = f"UPDATE {self._table} SET {set_clause}"
+                if where:
+                    sql_upd += f" WHERE {where}"
+                    self._conn.execute(sql_upd, set_vals + vals)
+                else:
+                    self._conn.execute(sql_upd, set_vals)
+            self._conn.commit()
+        elif upsert:
+            row_data = {**soi_data, **set_data}
+            # Merge query simple equality fields
+            for k, v in query.items():
+                if isinstance(v, str) and k not in row_data:
+                    row_data[k] = v
+            row_data = {k: v for k, v in row_data.items() if k in cols}
+            if row_data:
+                ks = ', '.join(row_data.keys())
+                vs = ', '.join(['?'] * len(row_data))
+                self._conn.execute(
+                    f"INSERT OR REPLACE INTO {self._table} ({ks}) VALUES ({vs})",
+                    list(row_data.values()))
+                self._conn.commit()
+
+    def insert_one(self, doc: dict):
+        cols = self._cols()
+        row  = {k: v for k, v in doc.items() if k in cols}
+        if row:
+            ks = ', '.join(row.keys())
+            vs = ', '.join(['?'] * len(row))
+            self._conn.execute(
+                f"INSERT OR REPLACE INTO {self._table} ({ks}) VALUES ({vs})",
+                list(row.values()))
+            self._conn.commit()
+
+    def count_documents(self, query: dict):
+        where, vals = self._build_where(query)
+        sql = f"SELECT COUNT(*) FROM {self._table}"
+        if where:
+            sql += f" WHERE {where}"
+        cur = self._conn.execute(sql, vals)
+        return cur.fetchone()[0]
+
+    def estimated_document_count(self):
+        cur = self._conn.execute(f"SELECT COUNT(*) FROM {self._table}")
+        return cur.fetchone()[0]
+
+    def distinct(self, field, *a, **kw):
+        try:
+            cur = self._conn.execute(
+                f"SELECT DISTINCT {field} FROM {self._table} WHERE {field} IS NOT NULL")
+            return [r[0] for r in cur.fetchall()]
+        except Exception:
+            return []
+
+    def aggregate(self, pipeline):
+        # Minimal support for the dashboard $group pipeline
+        return []
+
+    def create_index(self, *a, **kw):
+        pass
+
+    def _build_where(self, query: dict):
+        if not query:
+            return '', []
+        clauses, vals = [], []
+        for k, v in query.items():
+            if k.startswith('$'):
+                continue
+            if isinstance(v, dict):
+                continue
+            clauses.append(f"{k} = ?")
+            vals.append(v)
+        if not clauses:
+            return '', []
+        return ' AND '.join(clauses), vals
+
+
+_local_dev_db: _LocalDevDB | None = None
+
 def _get_db():
-    """DB2: Atlas app data — generated_voters, otp_sessions, etc."""
-    global _app_client
+    """DB2: Atlas app data — generated_voters, otp_sessions, etc.
+    Falls back to local SQLite when MONGO_URI is a placeholder (dev mode).
+    """
+    global _app_client, _local_dev_db
+
+    if _is_local_app_db_mode():
+        if _local_dev_db is None:
+            _local_dev_db = _LocalDevDB()
+            logger.info("Local SQLite app DB active (dev mode): %s", _sqlite_db_path)
+        return _local_dev_db
+
     if _app_client is None:
         _app_client = MongoClient(
             config.MONGO_URI,
@@ -329,8 +714,7 @@ def _gen_doc_to_dict(doc: dict) -> dict | None:
 def find_voter_by_epic(epic_no: str) -> dict | None:
     """
     Search DB1 (DigitalOcean voter_db) for a voter by EPIC number.
-    DB1 has 233 ass_<N> collections each with an EPIC_NO index.
-    Strategy: search all collections — EPIC_NO index makes each query fast.
+    Falls back to local MySQL (Laragon) when MONGO_VOTER_URL is not configured.
     Result is cached 10 minutes.
     """
     epic_no = epic_no.strip().upper()
@@ -342,34 +726,72 @@ def find_voter_by_epic(epic_no: str) -> dict | None:
     if cached:
         return cached if cached.get('epic_no') else None
 
+    # ── Local MySQL mode (dev / Laragon) ──────────────────────────
+    if _is_local_mysql_mode():
+        result = _mysql_find_by_epic(epic_no)
+        if result:
+            _cache_set(cache_key, result, 600)
+        else:
+            _cache_set(cache_key, {'epic_no': ''}, 120)
+        return result
+
+    # ── Production MongoDB mode ───────────────────────────────────
     try:
         voter_db = _get_voter_db()
         if voter_db is None:
             logger.error("Voter DB unavailable — cannot look up EPIC %s", epic_no)
             return None
-        col_names = voter_db.list_collection_names()   # cached by driver
-        for col_name in col_names:
-            doc = voter_db[col_name].find_one({"EPIC_NO": epic_no})
+
+        col_names = voter_db.list_collection_names()
+
+        # ── Fast path: try most-populated assemblies first ─────────
+        # EPIC prefixes often map to specific states/districts.
+        # Putting high-volume collections first cuts avg scan time.
+        priority = ['ass_1', 'ass_2', 'ass_16', 'ass_17', 'ass_3',
+                    'ass_4', 'ass_5', 'ass_6', 'ass_7', 'ass_8',
+                    'ass_9', 'ass_10', 'ass_11', 'ass_12', 'ass_13']
+        ordered = priority + [c for c in col_names if c not in priority]
+
+        for col_name in ordered:
+            if col_name not in col_names:
+                continue
+            doc = voter_db[col_name].find_one(
+                {"EPIC_NO": epic_no},
+                # Only fetch fields we need — faster over network
+                {"EPIC_NO":1,"VOTER_NAME":1,"FM_NAME_EN":1,"LASTNAME_EN":1,
+                 "ASSEMBLY_NO":1,"ASSEMBLY_NAME":1,"DISTRICT":1,"DISTRICT_NAME":1,
+                 "PART_NO":1,"SECTION_NO":1,"GENDER":1,"AGE":1,"MOBILE_NUMBER":1,
+                 "MOBILE_NO":1,"RELATION_TYPE":1,"RELATION_NAME":1,"HOUSE_NO":1,
+                 "C_HOUSE_NO":1,"AC_NO":1,"SLNOINPART":1}
+            )
             if doc:
                 result = _doc_to_voter(doc)
                 _cache_set(cache_key, result, 600)
                 return result
-    except Exception as e:
-        logger.error("Voter DB lookup error: %s", e)
 
-    # Not found — cache negative result for 2 min to avoid hammering DB
+    except Exception as e:
+        logger.error("Voter DB lookup error for %s: %s", epic_no, e)
+        return None
+
+    # Not found in any collection
     _cache_set(cache_key, {'epic_no': ''}, 120)
     return None
 
 
 def find_voters_by_mobile(mobile: str) -> list[dict]:
     """
-    Search DB1 for voters by mobile number across all ass_<N> collections.
-    Returns list of matching voter dicts.
+    Search DB1 for voters by mobile number.
+    Falls back to local MySQL (Laragon) when MONGO_VOTER_URL is not configured.
     """
     mobile = mobile.strip()
     if not mobile:
         return []
+
+    # ── Local MySQL mode ──────────────────────────────────────────
+    if _is_local_mysql_mode():
+        return _mysql_find_by_mobile(mobile)
+
+    # ── Production MongoDB mode ───────────────────────────────────
     results = []
     try:
         voter_db = _get_voter_db()
@@ -716,9 +1138,15 @@ def chat_validate_epic():
     if not valid:
         return jsonify({'success': False, 'message': result}), 400
     epic_no = result
-    voter = find_voter_by_epic(epic_no)
+    try:
+        voter = find_voter_by_epic(epic_no)
+    except Exception as e:
+        logger.error("validate-epic lookup error %s: %s", epic_no, e)
+        return jsonify({'success': False,
+                        'message': 'Database temporarily unavailable. Please try again in a few seconds.'}), 503
     if not voter:
-        return jsonify({'success': False, 'message': 'EPIC Number not found in our records. Please check and try again.'}), 404
+        return jsonify({'success': False,
+                        'message': 'EPIC Number not found. Please check and try again.'}), 404
     return jsonify({'success': True, 'voter': voter})
 
 
@@ -1073,7 +1501,17 @@ def chat_generate_card():
 
     try:
         # ── Validate face in photo ────────────────────────────────
-        is_valid, face_msg, photo_image = validate_photo_for_id_card(photo_stream)
+        # In dev mode (SKIP_FACE_DETECTION=true) skip face check for easy local testing
+        skip_face = os.getenv('SKIP_FACE_DETECTION', '').lower() in ('1', 'true', 'yes')
+        if skip_face:
+            try:
+                photo_image = Image.open(photo_stream).convert('RGB')
+                is_valid, face_msg = True, 'Skipped (dev mode)'
+            except Exception as img_err:
+                return jsonify({'success': False, 'message': f'Invalid photo: {img_err}'}), 400
+        else:
+            is_valid, face_msg, photo_image = validate_photo_for_id_card(photo_stream)
+
         if not is_valid:
             return jsonify({
                 'success': False,
@@ -1084,16 +1522,19 @@ def chat_generate_card():
         # ── Upload photo to Cloudinary ────────────────────────────
         photo_url = ''
         try:
-            photo_buf = io.BytesIO()
-            photo_image.save(photo_buf, format='JPEG', quality=95)
-            photo_buf.seek(0)
-            up = cloudinary.uploader.upload(
-                photo_buf.getvalue(),
-                folder='member_photos', public_id=epic_no,
-                overwrite=True, resource_type='image'
-            )
-            photo_url = up['secure_url']
-            logger.info("Photo uploaded for %s: %s", epic_no, photo_url)
+            if config.CLOUDINARY_API_KEY and config.CLOUDINARY_API_KEY != 'your_cloudinary_api_key':
+                photo_buf = io.BytesIO()
+                photo_image.save(photo_buf, format='JPEG', quality=95)
+                photo_buf.seek(0)
+                up = cloudinary.uploader.upload(
+                    photo_buf.getvalue(),
+                    folder='member_photos', public_id=epic_no,
+                    overwrite=True, resource_type='image'
+                )
+                photo_url = up['secure_url']
+                logger.info("Photo uploaded for %s: %s", epic_no, photo_url)
+            else:
+                logger.info("Cloudinary not configured — skipping photo upload for %s", epic_no)
         except Exception as e:
             logger.error("Photo upload failed for %s: %s", epic_no, e)
 
@@ -1139,10 +1580,13 @@ def chat_generate_card():
             back_buf = io.BytesIO()
             back_img.save(back_buf, format='JPEG', quality=config.JPEG_QUALITY)
             back_buf.seek(0)
-            
-            if config.CLOUDINARY_API_KEY:
-                # Upload back
-                back_up = cloudinary.uploader.upload(back_buf.getvalue(), folder='generated_cards', public_id=f"{epic_no}_back", overwrite=True)
+
+            _cld_ok = bool(config.CLOUDINARY_API_KEY and
+                           config.CLOUDINARY_API_KEY != 'your_cloudinary_api_key')
+
+            if _cld_ok:
+                back_up  = cloudinary.uploader.upload(back_buf.getvalue(), folder='generated_cards',
+                                                       public_id=f"{epic_no}_back", overwrite=True)
                 back_url = back_up['secure_url']
             else:
                 import base64
@@ -1150,49 +1594,58 @@ def chat_generate_card():
 
             combined = generate_combined_card(card_image, back_img)
             comb_buf = io.BytesIO()
-            combined.save(comb_buf, format='JPEG', quality=config.JPEG_QUALITY, dpi=(config.CARD_DPI, config.CARD_DPI))
+            combined.save(comb_buf, format='JPEG', quality=config.JPEG_QUALITY,
+                          dpi=(config.CARD_DPI, config.CARD_DPI))
             comb_buf.seek(0)
-            
-            if config.CLOUDINARY_API_KEY:
-                comb_up = cloudinary.uploader.upload(comb_buf.getvalue(), folder='generated_cards', public_id=f"{epic_no}_combined", overwrite=True)
+
+            if _cld_ok:
+                comb_up      = cloudinary.uploader.upload(comb_buf.getvalue(), folder='generated_cards',
+                                                           public_id=f"{epic_no}_combined", overwrite=True)
                 combined_url = comb_up['secure_url']
             else:
                 import base64
                 combined_url = "data:image/jpeg;base64," + base64.b64encode(comb_buf.getvalue()).decode()
-            
+
             logger.info("Combined/Back ready for %s", epic_no)
         except Exception as ce:
-            logger.warning("Back/Combined generation/upload failed for %s: %s", epic_no, ce)
+            import traceback as _tb
+            logger.warning("Back/Combined generation/upload failed for %s: %s\n%s",
+                           epic_no, ce, _tb.format_exc())
 
         now = datetime.now(timezone.utc)
+        now_str = now.isoformat()   # SQLite-safe string; Atlas accepts both
         db  = _get_db()
 
-        db.generated_voters.update_one(
-            {"EPIC_NO": epic_no},
-            {"$set": {
-                "EPIC_NO":        epic_no,
-                "ptc_code":       ptc_code,
-                "photo_url":      photo_url,
-                "card_url":       card_url,
-                "combined_url":   combined_url,
-                "generated_at":   now,
-                "FM_NAME_EN":     voter.get('FM_NAME_EN', ''),
-                "LASTNAME_EN":    voter.get('LASTNAME_EN', ''),
-                "ASSEMBLY_NAME":  voter.get('ASSEMBLY_NAME', ''),
-                "DISTRICT_NAME":  voter.get('DISTRICT_NAME', ''),
-                "AC_NO":          voter.get('AC_NO', ''),
-            },
-            "$setOnInsert": {"created_at": now}},
-            upsert=True
-        )
-        db.generation_stats.update_one(
-            {"epic_no": epic_no},
-            {"$set":  {"card_url": card_url, "combined_url": combined_url,
-                       "photo_url": photo_url, "last_generated": now},
-             "$inc":  {"count": 1},
-             "$setOnInsert": {"epic_no": epic_no}},
-            upsert=True
-        )
+        try:
+            db.generated_voters.update_one(
+                {"EPIC_NO": epic_no},
+                {"$set": {
+                    "EPIC_NO":        epic_no,
+                    "ptc_code":       ptc_code,
+                    "photo_url":      photo_url,
+                    "card_url":       card_url,
+                    "combined_url":   combined_url,
+                    "generated_at":   now_str,
+                    "FM_NAME_EN":     voter.get('FM_NAME_EN', ''),
+                    "LASTNAME_EN":    voter.get('LASTNAME_EN', ''),
+                    "ASSEMBLY_NAME":  voter.get('ASSEMBLY_NAME', ''),
+                    "DISTRICT_NAME":  voter.get('DISTRICT_NAME', ''),
+                    "AC_NO":          voter.get('AC_NO', ''),
+                },
+                "$setOnInsert": {"created_at": now_str}},
+                upsert=True
+            )
+            db.generation_stats.update_one(
+                {"epic_no": epic_no},
+                {"$set":  {"card_url": card_url, "combined_url": combined_url,
+                           "photo_url": photo_url, "last_generated": now_str},
+                 "$inc":  {"count": 1},
+                 "$setOnInsert": {"epic_no": epic_no}},
+                upsert=True
+            )
+        except Exception as db_err:
+            import traceback as _tb
+            logger.error("DB write error for %s: %s\n%s", epic_no, db_err, _tb.format_exc())
 
         return jsonify({
             'success':      True,
@@ -1208,7 +1661,8 @@ def chat_generate_card():
         })
 
     except Exception as e:
-        logger.error("Card generation error for %s: %s", epic_no, e)
+        import traceback as _tb
+        logger.error("Card generation error for %s: %s\n%s", epic_no, e, _tb.format_exc())
         return jsonify({'success': False, 'message': 'Card generation failed. Please try again.'}), 500
 
 
